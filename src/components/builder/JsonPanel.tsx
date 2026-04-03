@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildJson, validateJson } from '@/lib/message-builder';
-import { Copy, Check, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { buildJson, validateJson, extractJsonFromText } from '@/lib/message-builder';
+import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function JsonPanel() {
@@ -25,11 +25,31 @@ export default function JsonPanel() {
     setValidation(validateJson(value));
   }, []);
 
+  const handlePasteRepair = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted) {
+      try {
+        JSON.parse(pasted);
+      } catch {
+        // Try to extract/repair JSON
+        const repaired = extractJsonFromText(pasted);
+        const result = validateJson(repaired);
+        if (result.valid) {
+          e.preventDefault();
+          const formatted = JSON.stringify(JSON.parse(repaired), null, 2);
+          setJsonText(formatted);
+          setValidation({ valid: true });
+          toast.success('JSON автоматически исправлен');
+        }
+      }
+    }
+  }, []);
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(editMode ? jsonText : generatedJson);
       setCopied(true);
-      toast.success('JSON скопирован');
+      toast.success('JSON скопирован в буфер обмена');
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error('Ошибка копирования');
@@ -40,16 +60,11 @@ export default function JsonPanel() {
     if (!validation.valid) return;
     try {
       const parsed = JSON.parse(jsonText);
-      // Try to map back to message fields
-      if (parsed.text !== undefined) {
-        setMessage(prev => ({ ...prev, text: parsed.text }));
-      }
-      if (parsed.caption !== undefined) {
-        setMessage(prev => ({ ...prev, text: parsed.caption }));
-      }
-      if (parsed.chat_id !== undefined) {
-        setMessage(prev => ({ ...prev, chatId: String(parsed.chat_id) }));
-      }
+      setMessage(prev => ({
+        ...prev,
+        text: parsed.text ?? parsed.caption ?? prev.text,
+        chatId: parsed.chat_id != null ? String(parsed.chat_id) : prev.chatId,
+      }));
       setEditMode(false);
       toast.success('Изменения применены');
     } catch {
@@ -65,12 +80,12 @@ export default function JsonPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-            {message.platform === 'telegram' ? 'JSON Structure (TG)' : 'JSON Structure (MAX)'}
+            JSON {message.platform === 'telegram' ? '(Telegram)' : '(MAX)'}
           </h3>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
             validation.valid
-              ? 'bg-success/15 text-success'
-              : 'bg-destructive/15 text-destructive'
+              ? 'bg-success/10 text-success'
+              : 'bg-destructive/10 text-destructive'
           }`}>
             {validation.valid ? (
               <><CheckCircle2 size={10} /> VALID</>
@@ -82,63 +97,72 @@ export default function JsonPanel() {
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => setEditMode(!editMode)}
-            className={`text-[11px] font-medium px-3 py-1 rounded-md transition-colors ${
+            className={`flex items-center gap-1 text-[11px] font-medium px-3 py-1 rounded-md transition-colors ${
               editMode
-                ? 'bg-primary/15 text-primary'
-                : 'bg-secondary text-secondary-foreground hover:bg-surface-hover'
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted text-muted-foreground hover:bg-secondary'
             }`}
           >
-            {editMode ? 'EDITING' : 'EDIT'}
+            {editMode ? <><Eye size={11} /> Просмотр</> : <><Edit3 size={11} /> Редакт.</>}
           </button>
           <button
+            type="button"
             onClick={copyToClipboard}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm"
           >
             {copied ? <Check size={12} /> : <Copy size={12} />}
-            {copied ? 'COPIED' : 'COPY JSON'}
+            {copied ? 'Скопировано' : 'Копировать'}
           </button>
         </div>
       </div>
 
       {/* JSON content */}
-      <div className="flex-1 overflow-auto p-4 relative">
+      <div className="flex-1 overflow-auto p-4">
         {editMode ? (
-          <div className="relative">
-            <div className="absolute left-0 top-0 w-8 text-right pr-2 select-none">
-              {Array.from({ length: lineCount }, (_, i) => (
-                <div key={i} className="text-[10px] leading-5 text-muted-foreground/40 font-mono">
-                  {i + 1}
-                </div>
-              ))}
+          <div>
+            <div className="flex">
+              <div className="w-8 text-right pr-2 select-none flex-shrink-0">
+                {Array.from({ length: lineCount }, (_, i) => (
+                  <div key={i} className="text-[10px] leading-5 text-muted-foreground/40 font-mono">{i + 1}</div>
+                ))}
+              </div>
+              <textarea
+                value={jsonText}
+                onChange={e => handleJsonEdit(e.target.value)}
+                onPaste={handlePasteRepair}
+                className="flex-1 min-h-[400px] bg-transparent text-foreground font-mono text-sm leading-5 resize-none focus:outline-none"
+                spellCheck={false}
+              />
             </div>
-            <textarea
-              value={jsonText}
-              onChange={e => handleJsonEdit(e.target.value)}
-              className="w-full min-h-[400px] pl-10 bg-transparent text-foreground font-mono text-sm leading-5 resize-none focus:outline-none"
-              spellCheck={false}
-            />
             {validation.valid && (
-              <div className="mt-3">
+              <div className="mt-3 flex gap-2">
                 <button
+                  type="button"
                   onClick={applyJsonChanges}
-                  className="px-4 py-2 rounded-lg bg-success/15 text-success text-xs font-semibold hover:bg-success/25 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-success/10 text-success text-xs font-semibold hover:bg-success/20 transition-colors"
                 >
-                  Apply Changes
+                  Применить изменения
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditMode(false)}
+                  className="px-4 py-2 rounded-lg bg-muted text-muted-foreground text-xs font-semibold hover:bg-secondary transition-colors"
+                >
+                  Отмена
                 </button>
               </div>
             )}
           </div>
         ) : (
-          <div className="relative">
-            <div className="absolute left-0 top-0 w-8 text-right pr-2 select-none">
+          <div className="flex">
+            <div className="w-8 text-right pr-2 select-none flex-shrink-0">
               {Array.from({ length: lineCount }, (_, i) => (
-                <div key={i} className="text-[10px] leading-5 text-muted-foreground/40 font-mono">
-                  {i + 1}
-                </div>
+                <div key={i} className="text-[10px] leading-5 text-muted-foreground/40 font-mono">{i + 1}</div>
               ))}
             </div>
-            <pre className="pl-10 text-sm leading-5 font-mono whitespace-pre-wrap">
+            <pre className="text-sm leading-5 font-mono whitespace-pre-wrap flex-1">
               <JsonHighlighter json={generatedJson} />
             </pre>
           </div>
@@ -147,22 +171,22 @@ export default function JsonPanel() {
 
       {/* Validation error */}
       {!validation.valid && validation.error && (
-        <div className="px-4 py-2 border-t border-destructive/30 bg-destructive/5">
+        <div className="px-4 py-2 border-t border-destructive/20 bg-destructive/5">
           <p className="text-xs text-destructive font-mono">{validation.error}</p>
         </div>
       )}
 
-      {/* Footer info */}
+      {/* Footer */}
       <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
         <span>
-          {message.platform === 'telegram' ? 'Telegram Bot API' : 'MAX (TamTam) API'} •{' '}
-          {message.parseMode}
+          {message.platform === 'telegram' ? 'Telegram Bot API' : 'MAX API'} • {message.parseMode}
         </span>
         <span>
           {message.platform === 'telegram'
-            ? message.mediaType !== 'none' ? 'send' + message.mediaType.charAt(0).toUpperCase() + message.mediaType.slice(1) : 'sendMessage'
-            : 'messages/send'
-          }
+            ? message.mediaType !== 'none' && message.mediaUrl
+              ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
+              : 'sendMessage'
+            : 'messages/send'}
         </span>
       </div>
     </div>
@@ -170,16 +194,11 @@ export default function JsonPanel() {
 }
 
 function JsonHighlighter({ json }: { json: string }) {
-  const highlighted = json.replace(
-    /("(?:[^"\\]|\\.)*")\s*:/g,
-    '<span class="text-info">$1</span>:'
-  ).replace(
-    /:\s*("(?:[^"\\]|\\.)*")/g,
-    ': <span class="text-primary">$1</span>'
-  ).replace(
-    /:\s*(\d+)/g,
-    ': <span class="text-warning">$1</span>'
-  );
+  const highlighted = json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(?:[^"\\]|\\.)*")\s*:/g, '<span style="color:hsl(210,85%,52%)">$1</span>:')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span style="color:hsl(25,90%,52%)">$1</span>')
+    .replace(/:\s*(\d+)/g, ': <span style="color:hsl(152,60%,42%)">$1</span>');
 
   return <code dangerouslySetInnerHTML={{ __html: highlighted }} />;
 }
