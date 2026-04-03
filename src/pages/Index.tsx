@@ -1,16 +1,33 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { MessageProvider } from '@/contexts/MessageContext';
+import AppHeader from '@/components/builder/AppHeader';
+import EditorPanel from '@/components/builder/EditorPanel';
+import PreviewPanel from '@/components/builder/PreviewPanel';
+import JsonPanel from '@/components/builder/JsonPanel';
 
-// IMPORTANT: Fully REPLACE this with your own code
-const PlaceholderIndex = () => {
-  // PLACEHOLDER: Replace this entire return statement with the user's app.
-  // The inline background color is intentionally not part of the design system.
+const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: '#fcfbf8' }}>
-      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
+    <MessageProvider>
+      <div className="h-screen flex flex-col overflow-hidden">
+        <AppHeader />
+        <div className="flex-1 flex overflow-hidden">
+          {/* Editor */}
+          <div className="w-[360px] flex-shrink-0 border-r border-border overflow-hidden">
+            <EditorPanel />
+          </div>
+
+          {/* Preview */}
+          <div className="flex-1 border-r border-border overflow-hidden bg-background">
+            <PreviewPanel />
+          </div>
+
+          {/* JSON */}
+          <div className="w-[420px] flex-shrink-0 overflow-hidden">
+            <JsonPanel />
+          </div>
+        </div>
+      </div>
+    </MessageProvider>
   );
 };
-
-const Index = PlaceholderIndex;
 
 export default Index;
