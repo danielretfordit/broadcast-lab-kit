@@ -93,3 +93,7 @@
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
 }
+
+.section-label {
+  @apply text-[11px] font-semibold tracking-[0.15em] uppercase text-primary mb-2 block;
+}
