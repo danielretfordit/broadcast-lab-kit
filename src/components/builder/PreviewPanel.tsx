@@ -1,27 +1,20 @@
 import { useMessage } from '@/contexts/MessageContext';
-import { Send } from 'lucide-react';
+import { Send, ExternalLink } from 'lucide-react';
 
 export default function PreviewPanel() {
   const { message } = useMessage();
 
-  // Simple markdown to display text converter
   const renderText = (text: string) => {
-    if (!text) return <span className="text-muted-foreground italic text-sm">No message text</span>;
+    if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
 
     let html = text;
     if (message.parseMode === 'MarkdownV2') {
-      // Bold
       html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
-      // Underline
       html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
-      // Italic
       html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
-      // Links
-      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-info underline">$1</a>');
-      // Remove escape characters
+      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener">$1</a>');
       html = html.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
     }
-    // For HTML mode, render as-is (sanitized)
     html = html.replace(/\n/g, '<br/>');
 
     return <span dangerouslySetInnerHTML={{ __html: html }} />;
@@ -30,118 +23,88 @@ export default function PreviewPanel() {
   const isTelegram = message.platform === 'telegram';
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-4 font-medium">
-        {isTelegram ? 'TELEGRAM' : 'MAX'} DEVICE PREVIEW
-      </p>
+    <div className="flex flex-col h-full overflow-y-auto p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
+          isTelegram ? 'bg-info' : 'bg-accent'
+        }`}>
+          {isTelegram ? <Send size={12} /> : 'M'}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-foreground">{isTelegram ? 'Telegram' : 'MAX'} Preview</p>
+          <p className="text-[10px] text-success font-medium">online</p>
+        </div>
+      </div>
 
-      {/* Phone Frame */}
-      <div className="relative w-[300px]">
-        {/* Phone bezel */}
-        <div className="rounded-[2rem] bg-muted border-2 border-border p-2 shadow-2xl">
-          {/* Notch */}
-          <div className="flex justify-center mb-1">
-            <div className="w-20 h-5 bg-background rounded-b-xl flex items-center justify-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-border" />
-              <div className="w-8 h-1.5 rounded-full bg-border" />
-            </div>
+      {/* Message card */}
+      <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
+        {/* Media */}
+        {message.mediaType !== 'none' && message.mediaUrl && (
+          <div className="rounded-t-xl overflow-hidden">
+            {message.mediaType === 'photo' ? (
+              <img
+                src={message.mediaUrl}
+                alt="media preview"
+                className="w-full max-h-60 object-cover bg-muted"
+                onError={e => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.parentElement!.innerHTML = '<div class="w-full h-32 bg-muted flex items-center justify-center text-muted-foreground text-xs">⚠ Не удалось загрузить изображение</div>';
+                }}
+              />
+            ) : (
+              <div className="w-full h-20 bg-muted flex items-center justify-center text-muted-foreground text-sm">
+                {message.mediaType === 'video' ? '🎬 Видео' : '📎 Документ'}
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Screen */}
-          <div className="rounded-[1.25rem] bg-background overflow-hidden">
-            {/* Status bar */}
-            <div className={`px-4 py-2 flex items-center gap-2 ${
-              isTelegram ? 'bg-info/20' : 'bg-primary/10'
-            }`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                isTelegram ? 'bg-info text-primary-foreground' : 'bg-primary text-primary-foreground'
-              }`}>
-                {isTelegram ? <Send size={12} /> : 'M'}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground">
-                  {isTelegram ? 'TELEGRAM' : 'MAX'}
-                </p>
-                <p className="text-[9px] text-success">online</p>
-              </div>
-            </div>
-
-            {/* Chat area */}
-            <div className="p-3 min-h-[350px] flex flex-col justify-end">
-              {/* Message bubble */}
-              <div className="max-w-[240px] self-start">
-                {/* Media preview */}
-                {message.mediaType !== 'none' && message.mediaUrl && (
-                  <div className="rounded-t-xl overflow-hidden mb-0">
-                    {message.mediaType === 'photo' ? (
-                      <img
-                        src={message.mediaUrl}
-                        alt="media"
-                        className="w-full h-36 object-cover bg-secondary"
-                        onError={e => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-24 bg-secondary flex items-center justify-center">
-                        <span className="text-muted-foreground text-xs">
-                          {message.mediaType === 'video' ? '🎬 Video' : '📎 Document'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Text */}
-                {(message.text || message.mediaType === 'none') && (
-                  <div className={`bg-secondary px-3 py-2 text-sm leading-relaxed text-foreground ${
-                    message.mediaType !== 'none' && message.mediaUrl ? 'rounded-b-xl' : 'rounded-xl'
-                  }`}>
-                    {renderText(message.text)}
-                    <div className="text-right mt-1">
-                      <span className="text-[9px] text-muted-foreground">15:00 ✓✓</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Inline buttons */}
-                {message.buttonRows.length > 0 && (
-                  <div className="mt-1 space-y-1">
-                    {message.buttonRows.map(row => (
-                      <div key={row.id} className="flex gap-1">
-                        {row.buttons.map(btn => (
-                          <button
-                            key={btn.id}
-                            className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
-                              isTelegram
-                                ? 'bg-info/15 text-info hover:bg-info/25'
-                                : 'bg-primary/15 text-primary hover:bg-primary/25'
-                            }`}
-                          >
-                            {btn.text}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Input bar */}
-            <div className="px-3 py-2 border-t border-border flex items-center gap-2">
-              <div className="flex-1 h-8 rounded-full bg-secondary border border-border" />
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                <Send size={12} className="text-primary-foreground" />
-              </div>
-            </div>
+        {/* Text body */}
+        <div className={`px-4 py-3 text-sm leading-relaxed text-foreground ${
+          !(message.mediaType !== 'none' && message.mediaUrl) ? '' : ''
+        }`}>
+          {renderText(message.text)}
+          <div className="text-right mt-2">
+            <span className="text-[10px] text-muted-foreground">15:00 ✓✓</span>
           </div>
         </div>
+      </div>
 
-        {/* Home indicator */}
-        <div className="flex justify-center mt-2">
-          <div className="w-28 h-1 rounded-full bg-muted-foreground/30" />
+      {/* Buttons below the card */}
+      {message.buttonRows.length > 0 && (
+        <div className="mt-2 space-y-1.5 max-w-xl">
+          {message.buttonRows.map(row => (
+            <div key={row.id} className="flex gap-1.5">
+              {row.buttons.map(btn => (
+                <button
+                  key={btn.id}
+                  type="button"
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                    isTelegram
+                      ? 'border-info/30 text-info bg-info/5 hover:bg-info/10'
+                      : 'border-accent/30 text-accent bg-accent/5 hover:bg-accent/10'
+                  }`}
+                >
+                  {btn.url && <ExternalLink size={12} />}
+                  {btn.text}
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
+      )}
+
+      {/* API Method info */}
+      <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
+        <span className="font-semibold">API Method: </span>
+        {message.platform === 'telegram'
+          ? message.mediaType !== 'none' && message.mediaUrl
+            ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
+            : 'sendMessage'
+          : 'POST /messages'}
+        {' • '}
+        {message.parseMode}
       </div>
     </div>
   );
