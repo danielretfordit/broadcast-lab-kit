@@ -1,3 +1,5 @@
+import { escapeMarkdownV2Plain, prepareMarkdownV2 } from '@/lib/markdown';
+
 export type Platform = 'telegram' | 'max';
 
 export interface InlineButton {
@@ -36,70 +38,6 @@ export function createEmptyMessage(): MessageData {
     parseMode: 'MarkdownV2',
     buttonRows: [],
   };
-}
-
-/**
- * Escapes special characters for Telegram MarkdownV2.
- * These chars must be escaped: _ * [ ] ( ) ~ ` > # + - = | { } . !
- * BUT we do NOT escape chars inside formatting constructs the user typed intentionally.
- * The user is expected to write raw MarkdownV2 (with *bold*, _italic_, etc.)
- * so we only auto-escape characters that are NOT part of formatting.
- */
-const MARKDOWN_V2_SPECIAL = /([.!\-=|{}()~`>#+])/g;
-
-export function escapeMarkdownV2Plain(text: string): string {
-  // Escape only non-formatting special chars in plain segments
-  return text.replace(MARKDOWN_V2_SPECIAL, '\\$1');
-}
-
-/**
- * Process user-written text for Telegram MarkdownV2:
- * The user writes human-friendly markdown (*bold*, _italic_, __underline__, [text](url))
- * and we auto-escape all other MarkdownV2 special chars outside formatting tokens.
- */
-export function prepareMarkdownV2(rawText: string): string {
-  // Split text into segments: formatting tokens vs plain text
-  // Regex matches: *text*, _text_, __text__, [text](url), `code`, ```pre```
-  const formatRegex = /(\*[^*]+\*|__[^_]+__|_[^_]+_|\[[^\]]+\]\([^)]+\)|`[^`]+`|```[\s\S]+?```)/g;
-  
-  const parts: string[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = formatRegex.exec(rawText)) !== null) {
-    // Plain text before this match - escape it
-    if (match.index > lastIndex) {
-      const plain = rawText.substring(lastIndex, match.index);
-      parts.push(escapeMarkdownV2Plain(plain));
-    }
-    
-    const token = match[0];
-    
-    // For links [text](url) — escape special chars inside text and url separately
-    const linkMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (linkMatch) {
-      const linkText = escapeMarkdownV2Plain(linkMatch[1]);
-      const linkUrl = linkMatch[2]; // URLs should not be escaped in MarkdownV2
-      parts.push(`[${linkText}](${linkUrl})`);
-    } else {
-      // For *bold*, _italic_, __underline__ — escape inner content
-      const marker = token.startsWith('__') ? '__' :
-                     token.startsWith('```') ? '```' :
-                     token[0];
-      const markerLen = marker.length;
-      const inner = token.substring(markerLen, token.length - markerLen);
-      parts.push(marker + escapeMarkdownV2Plain(inner) + marker);
-    }
-    
-    lastIndex = match.index + match[0].length;
-  }
-  
-  // Remaining plain text
-  if (lastIndex < rawText.length) {
-    parts.push(escapeMarkdownV2Plain(rawText.substring(lastIndex)));
-  }
-  
-  return parts.join('');
 }
 
 export function buildTelegramJson(msg: MessageData): object {
@@ -152,7 +90,7 @@ export function buildMaxJson(msg: MessageData): object {
 
   const inlineButtons = msg.buttonRows
     .filter(row => row.buttons.length > 0)
-    .flatMap(row =>
+    .map(row =>
       row.buttons.map(btn => {
         if (btn.url) return { type: 'link', text: btn.text, url: btn.url };
         return { type: 'callback', text: btn.text, payload: btn.callback_data || btn.text };
@@ -167,6 +105,7 @@ export function buildMaxJson(msg: MessageData): object {
   }
 
   return {
+    format: msg.parseMode === 'HTML' ? 'html' : 'markdown',
     text: msg.text || '',
     ...(attachments.length > 0 ? { attachments } : {}),
   };
