@@ -17,7 +17,6 @@ const MARKDOWN_V2_SPECIAL_CHARS = new Set([
   '}',
   '.',
   '!',
-  ':',
 ]);
 
 const INLINE_MARKERS = ['__', '||', '*', '_', '~'] as const;
