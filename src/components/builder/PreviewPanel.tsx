@@ -1,5 +1,8 @@
 import { useMessage } from '@/contexts/MessageContext';
-import { Send, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+
+const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
+const MAX_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/0/0a/VK_Max_Logo.svg';
 
 export default function PreviewPanel() {
   const { message } = useMessage();
@@ -26,9 +29,9 @@ export default function PreviewPanel() {
     <div className="flex flex-col h-full overflow-y-auto p-6">
       <div className="flex items-center gap-2 mb-4">
         <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-          isTelegram ? 'bg-info' : 'bg-accent'
+          isTelegram ? 'bg-[hsl(200,80%,50%)]' : 'bg-primary'
         }`}>
-          {isTelegram ? <Send size={12} /> : 'M'}
+          <img src={isTelegram ? TELEGRAM_LOGO : MAX_LOGO} alt="" className="w-4 h-4" />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">{isTelegram ? 'Telegram' : 'MAX'} Preview</p>
