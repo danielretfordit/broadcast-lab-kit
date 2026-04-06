@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildMaxJson, buildTelegramJson, createEmptyMessage, prepareMarkdownV2 } from '@/lib/message-builder';
+import { buildMaxJson, buildTelegramJson, createEmptyMessage } from '@/lib/message-builder';
+import { prepareMarkdownV2 } from '@/lib/markdown';
 
 describe('message-builder', () => {
   it('preserves valid Telegram MarkdownV2 escapes and nested formatting', () => {
