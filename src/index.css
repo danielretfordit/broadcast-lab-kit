@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,50 +6,50 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 220 15% 15%;
+    --background: 0 0% 97%;
+    --foreground: 220 15% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    --card-foreground: 220 15% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
+    --popover-foreground: 220 15% 12%;
 
-    --primary: 220 80% 50%;
+    --primary: 14 90% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 94%;
-    --secondary-foreground: 220 15% 30%;
+    --secondary: 220 10% 94%;
+    --secondary-foreground: 220 10% 30%;
 
-    --muted: 220 14% 96%;
+    --muted: 220 10% 96%;
     --muted-foreground: 220 10% 50%;
 
-    --accent: 25 90% 52%;
+    --accent: 14 90% 52%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 220 80% 50%;
+    --border: 220 10% 90%;
+    --input: 220 10% 90%;
+    --ring: 14 90% 52%;
 
     --radius: 0.625rem;
 
     --surface-elevated: 0 0% 100%;
-    --surface-hover: 220 14% 96%;
+    --surface-hover: 220 10% 96%;
     --success: 152 60% 42%;
     --warning: 38 92% 50%;
     --info: 210 85% 52%;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 15% 15%;
-    --sidebar-primary: 220 80% 50%;
+    --sidebar-foreground: 220 15% 12%;
+    --sidebar-primary: 14 90% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 94%;
-    --sidebar-accent-foreground: 220 15% 15%;
-    --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 220 80% 50%;
+    --sidebar-accent: 220 10% 94%;
+    --sidebar-accent-foreground: 220 15% 12%;
+    --sidebar-border: 220 10% 90%;
+    --sidebar-ring: 14 90% 52%;
   }
 }
 
@@ -60,7 +60,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Roboto', 'Inter', sans-serif;
   }
 
   code, pre, .font-mono {

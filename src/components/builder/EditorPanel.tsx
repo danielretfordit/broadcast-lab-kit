@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Link, Image, Video, FileText, Plus, X, GripVertical } from 'lucide-react';
+import { Bold, Underline, Italic, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function EditorPanel() {
   const { message, updateField } = useMessage();
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAi, setShowAi] = useState(false);
 
   const insertFormatting = (tag: string) => {
     const textarea = document.getElementById('msg-body') as HTMLTextAreaElement | null;
@@ -165,6 +171,55 @@ export default function EditorPanel() {
             : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'}
           className="w-full flex-1 min-h-[200px] px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
         />
+      </section>
+
+      {/* AI Editor */}
+      <section>
+        <button
+          type="button"
+          onClick={() => setShowAi(!showAi)}
+          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
+        >
+          <Sparkles size={14} />
+          AI-редактор сообщения
+        </button>
+        {showAi && (
+          <div className="mt-2 space-y-2">
+            <textarea
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              placeholder="Опишите что сделать с текстом: «Сделай более продающим», «Добавь эмодзи», «Переведи на английский»..."
+              className="w-full min-h-[80px] px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
+            />
+            <button
+              type="button"
+              disabled={aiLoading || !aiPrompt.trim()}
+              onClick={async () => {
+                setAiLoading(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('ai-message-editor', {
+                    body: { prompt: aiPrompt, currentText: message.text, parseMode: message.parseMode },
+                  });
+                  if (error) throw error;
+                  if (data?.text) {
+                    updateField('text', data.text);
+                    setAiPrompt('');
+                    toast.success('Текст обновлён с помощью AI');
+                  }
+                } catch (err: any) {
+                  console.error(err);
+                  toast.error(err?.message || 'Ошибка AI');
+                } finally {
+                  setAiLoading(false);
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {aiLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              {aiLoading ? 'Генерация...' : 'Применить AI'}
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Action Buttons */}
