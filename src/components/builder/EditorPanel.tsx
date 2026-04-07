@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2 } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -20,14 +20,17 @@ export default function EditorPanel() {
 
     let wrapped = '';
     if (message.parseMode === 'MarkdownV2') {
-      if (tag === 'bold') wrapped = `*${selected || 'текст'}*`;
+      const isMax = message.platform === 'max';
+      if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = `_${selected || 'текст'}_`;
-      else if (tag === 'underline') wrapped = `__${selected || 'текст'}__`;
+      else if (tag === 'underline') wrapped = isMax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
+      else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
       if (tag === 'bold') wrapped = `<b>${selected || 'текст'}</b>`;
       else if (tag === 'italic') wrapped = `<i>${selected || 'текст'}</i>`;
       else if (tag === 'underline') wrapped = `<u>${selected || 'текст'}</u>`;
+      else if (tag === 'strikethrough') wrapped = `<s>${selected || 'текст'}</s>`;
       else if (tag === 'link') wrapped = `<a href="url">${selected || 'текст'}</a>`;
     }
 
@@ -148,6 +151,7 @@ export default function EditorPanel() {
             { tag: 'bold', icon: Bold, title: 'Жирный' },
             { tag: 'italic', icon: Italic, title: 'Курсив' },
             { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
+            { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
             { tag: 'link', icon: Link, title: 'Ссылка' },
           ].map(({ tag, icon: Icon, title }) => (
             <button

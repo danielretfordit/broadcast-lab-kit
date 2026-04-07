@@ -13,10 +13,25 @@ export default function PreviewPanel() {
 
     let html = text;
     if (message.parseMode === 'MarkdownV2') {
-      html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
-      html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
-      html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+      const isMax = message.platform === 'max';
+      // Links first (same for both)
       html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener">$1</a>');
+      // Code
+      html = html.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs font-mono">$1</code>');
+      if (isMax) {
+        // MAX: **bold**, ++underline++, ~~strikethrough~~, *italic* or _italic_
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\+\+([^+]+)\+\+/g, '<u>$1</u>');
+        html = html.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+      } else {
+        // Telegram: *bold*, __underline__, ~strikethrough~, _italic_
+        html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
+        html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
+        html = html.replace(/~([^~]+)~/g, '<s>$1</s>');
+        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+      }
       html = html.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
     }
     html = html.replace(/\n/g, '<br/>');
