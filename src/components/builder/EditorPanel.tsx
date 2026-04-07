@@ -85,7 +85,7 @@ export default function EditorPanel() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5">
+    <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5 pb-10">
       {/* Media */}
       <section>
         <label className="section-label">Медиа контент</label>
@@ -130,7 +130,7 @@ export default function EditorPanel() {
       </section>
 
       {/* Message Body */}
-      <section className="flex-1 flex flex-col min-h-0">
+      <section className="flex flex-col">
         <div className="flex items-center justify-between mb-2">
           <label className="section-label !mb-0">Текст сообщения</label>
           <select
@@ -169,7 +169,7 @@ export default function EditorPanel() {
           placeholder={message.parseMode === 'MarkdownV2'
             ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
             : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'}
-          className="w-full flex-1 min-h-[200px] px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
+          className="w-full min-h-[180px] px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
         />
       </section>
 
