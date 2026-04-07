@@ -5,7 +5,6 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/broadcast-lab-kit/', // <--- ДОБАВЬТЕ ЭТУ СТРОКУ
   server: {
     host: "::",
     port: 8080,
