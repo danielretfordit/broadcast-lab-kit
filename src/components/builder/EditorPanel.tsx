@@ -151,6 +151,7 @@ export default function EditorPanel() {
             { tag: 'bold', icon: Bold, title: 'Жирный' },
             { tag: 'italic', icon: Italic, title: 'Курсив' },
             { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
+            { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
             { tag: 'link', icon: Link, title: 'Ссылка' },
           ].map(({ tag, icon: Icon, title }) => (
             <button
