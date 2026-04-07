@@ -169,7 +169,7 @@ export default function EditorPanel() {
           placeholder={message.parseMode === 'MarkdownV2'
             ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
             : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'}
-          className="w-full flex-1 min-h-[200px] px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
+          className="w-full min-h-[180px] px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
         />
       </section>
 
