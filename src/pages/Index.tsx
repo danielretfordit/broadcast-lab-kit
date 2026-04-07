@@ -11,7 +11,7 @@ const Index = () => {
         <AppHeader />
         <div className="flex-1 flex overflow-hidden">
           {/* Editor */}
-          <div className="w-[360px] flex-shrink-0 border-r border-border overflow-hidden">
+          <div className="w-[420px] flex-shrink-0 border-r border-border overflow-hidden">
             <EditorPanel />
           </div>
 
