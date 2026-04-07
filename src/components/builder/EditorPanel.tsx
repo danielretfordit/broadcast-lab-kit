@@ -85,7 +85,7 @@ export default function EditorPanel() {
   ];
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5">
+    <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5 pb-10">
       {/* Media */}
       <section>
         <label className="section-label">Медиа контент</label>
