@@ -20,14 +20,17 @@ export default function EditorPanel() {
 
     let wrapped = '';
     if (message.parseMode === 'MarkdownV2') {
-      if (tag === 'bold') wrapped = `*${selected || 'текст'}*`;
+      const isMax = message.platform === 'max';
+      if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = `_${selected || 'текст'}_`;
-      else if (tag === 'underline') wrapped = `__${selected || 'текст'}__`;
+      else if (tag === 'underline') wrapped = isMax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
+      else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
       if (tag === 'bold') wrapped = `<b>${selected || 'текст'}</b>`;
       else if (tag === 'italic') wrapped = `<i>${selected || 'текст'}</i>`;
       else if (tag === 'underline') wrapped = `<u>${selected || 'текст'}</u>`;
+      else if (tag === 'strikethrough') wrapped = `<s>${selected || 'текст'}</s>`;
       else if (tag === 'link') wrapped = `<a href="url">${selected || 'текст'}</a>`;
     }
 
