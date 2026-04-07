@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2 } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
