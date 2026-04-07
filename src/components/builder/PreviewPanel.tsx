@@ -38,7 +38,7 @@ export default function PreviewPanel() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-            isTelegram ? 'bg-[hsl(200,80%,50%)]' : 'bg-primary'
+            isTelegram ? 'bg-[hsl(200,80%,50%)]' : 'bg-secondary'
           }`}>
             <img src={isTelegram ? TELEGRAM_LOGO : maxLogo} alt="" className="w-4 h-4" />
           </div>
