@@ -130,7 +130,7 @@ export default function EditorPanel() {
       </section>
 
       {/* Message Body */}
-      <section className="flex-1 flex flex-col min-h-0">
+      <section className="flex flex-col">
         <div className="flex items-center justify-between mb-2">
           <label className="section-label !mb-0">Текст сообщения</label>
           <select
