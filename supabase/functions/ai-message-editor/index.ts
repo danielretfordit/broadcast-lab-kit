@@ -22,7 +22,7 @@ If the current text is empty, generate a new message based on the instruction.`;
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer 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`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
