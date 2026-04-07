@@ -19,7 +19,7 @@ Format the output using ${parseMode === 'HTML' ? 'HTML tags (<b>, <i>, <u>, <a h
 Keep the text concise, engaging, and appropriate for a messenger broadcast.
 If the current text is empty, generate a new message based on the instruction.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
