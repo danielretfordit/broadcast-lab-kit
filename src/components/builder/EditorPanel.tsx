@@ -11,6 +11,8 @@ export default function EditorPanel() {
   const [aiLoading, setAiLoading] = useState(false);
   const [showAi, setShowAi] = useState(false);
 
+  const isHtml = message.platform === 'html';
+
   const insertFormatting = (tag: string) => {
     const textarea = document.getElementById('msg-body') as HTMLTextAreaElement | null;
     if (!textarea) return;
@@ -36,7 +38,6 @@ export default function EditorPanel() {
 
     const newText = message.text.substring(0, start) + wrapped + message.text.substring(end);
     updateField('text', newText);
-    // Restore focus after state update
     requestAnimationFrame(() => {
       textarea.focus();
       const cursorPos = start + wrapped.length;
@@ -89,91 +90,103 @@ export default function EditorPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5 pb-10">
-      {/* Media */}
-      <section>
-        <label className="section-label">Медиа контент</label>
-        <div className="flex gap-1 mb-3">
-          {mediaTypes.map(mt => (
-            <button
-              key={mt.id}
-              type="button"
-              onClick={() => updateField('mediaType', mt.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                message.mediaType === mt.id
-                  ? 'bg-primary/10 text-primary border border-primary/25 shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-secondary'
-              }`}
-            >
-              {mt.icon && <mt.icon size={13} />}
-              {mt.label}
-            </button>
-          ))}
-        </div>
-        {message.mediaType !== 'none' && (
+      {/* Media - hidden for HTML */}
+      {!isHtml && (
+        <section>
+          <label className="section-label">Медиа контент</label>
+          <div className="flex gap-1 mb-3">
+            {mediaTypes.map(mt => (
+              <button
+                key={mt.id}
+                type="button"
+                onClick={() => updateField('mediaType', mt.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  message.mediaType === mt.id
+                    ? 'bg-primary/10 text-primary border border-primary/25 shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                {mt.icon && <mt.icon size={13} />}
+                {mt.label}
+              </button>
+            ))}
+          </div>
+          {message.mediaType !== 'none' && (
+            <input
+              type="text"
+              value={message.mediaUrl}
+              onChange={e => updateField('mediaUrl', e.target.value)}
+              placeholder="https://example.com/image.jpg"
+              className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+          )}
+        </section>
+      )}
+
+      {/* Chat ID - hidden for HTML */}
+      {!isHtml && (
+        <section>
+          <label className="section-label">Chat ID</label>
           <input
             type="text"
-            value={message.mediaUrl}
-            onChange={e => updateField('mediaUrl', e.target.value)}
-            placeholder="https://example.com/image.jpg"
+            value={message.chatId}
+            onChange={e => updateField('chatId', e.target.value)}
+            placeholder="258110807"
             className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
           />
-        )}
-      </section>
-
-      {/* Chat ID */}
-      <section>
-        <label className="section-label">Chat ID</label>
-        <input
-          type="text"
-          value={message.chatId}
-          onChange={e => updateField('chatId', e.target.value)}
-          placeholder="258110807"
-          className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-        />
-      </section>
+        </section>
+      )}
 
       {/* Message Body */}
-      <section className="flex flex-col">
+      <section className="flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">
-          <label className="section-label !mb-0">Текст сообщения</label>
-          <select
-            value={message.parseMode}
-            onChange={e => updateField('parseMode', e.target.value as 'MarkdownV2' | 'HTML')}
-            className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground cursor-pointer"
-          >
-            <option value="MarkdownV2">MarkdownV2</option>
-            <option value="HTML">HTML</option>
-          </select>
+          <label className="section-label !mb-0">{isHtml ? 'HTML код' : 'Текст сообщения'}</label>
+          {!isHtml && (
+            <select
+              value={message.parseMode}
+              onChange={e => updateField('parseMode', e.target.value as 'MarkdownV2' | 'HTML')}
+              className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground cursor-pointer"
+            >
+              <option value="MarkdownV2">MarkdownV2</option>
+              <option value="HTML">HTML</option>
+            </select>
+          )}
         </div>
 
-        <div className="flex items-center gap-1 mb-2">
-          {[
-            { tag: 'bold', icon: Bold, title: 'Жирный' },
-            { tag: 'italic', icon: Italic, title: 'Курсив' },
-            { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
-            { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
-            { tag: 'link', icon: Link, title: 'Ссылка' },
-          ].map(({ tag, icon: Icon, title }) => (
-            <button
-              key={tag}
-              type="button"
-              title={title}
-              onClick={() => insertFormatting(tag)}
-              className="w-8 h-8 rounded-md flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Icon size={14} />
-            </button>
-          ))}
-        </div>
+        {!isHtml && (
+          <div className="flex items-center gap-1 mb-2">
+            {[
+              { tag: 'bold', icon: Bold, title: 'Жирный' },
+              { tag: 'italic', icon: Italic, title: 'Курсив' },
+              { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
+              { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
+              { tag: 'link', icon: Link, title: 'Ссылка' },
+            ].map(({ tag, icon: Icon, title }) => (
+              <button
+                key={tag}
+                type="button"
+                title={title}
+                onClick={() => insertFormatting(tag)}
+                className="w-8 h-8 rounded-md flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Icon size={14} />
+              </button>
+            ))}
+          </div>
+        )}
 
         <textarea
           id="msg-body"
           value={message.text}
           onChange={e => updateField('text', e.target.value)}
-          placeholder={message.parseMode === 'MarkdownV2'
-            ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
-            : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'}
-          className="w-full min-h-[180px] px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
+          placeholder={isHtml
+            ? '<html>\n<body>\n  <h1>Заголовок</h1>\n  <p>Контент письма...</p>\n</body>\n</html>'
+            : message.parseMode === 'MarkdownV2'
+              ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
+              : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'}
+          className={`w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y ${
+            isHtml ? 'flex-1 min-h-[400px]' : 'min-h-[180px]'
+          }`}
         />
       </section>
 
@@ -226,70 +239,72 @@ export default function EditorPanel() {
         )}
       </section>
 
-      {/* Action Buttons */}
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <label className="section-label !mb-0">Inline кнопки</label>
-          <button
-            type="button"
-            onClick={addButtonRow}
-            className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
-          >
-            <Plus size={12} /> Добавить ряд
-          </button>
-        </div>
+      {/* Action Buttons - hidden for HTML */}
+      {!isHtml && (
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <label className="section-label !mb-0">Inline кнопки</label>
+            <button
+              type="button"
+              onClick={addButtonRow}
+              className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
+            >
+              <Plus size={12} /> Добавить ряд
+            </button>
+          </div>
 
-        <div className="space-y-3">
-          {message.buttonRows.map(row => (
-            <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
-              {row.buttons.map(btn => (
-                <div key={btn.id} className="flex items-start gap-2">
-                  <GripVertical size={14} className="mt-2.5 text-muted-foreground/50 flex-shrink-0 cursor-grab" />
-                  <div className="flex-1 space-y-1.5">
-                    <input
-                      type="text"
-                      value={btn.text}
-                      onChange={e => updateButton(row.id, btn.id, 'text', e.target.value)}
-                      placeholder="Текст кнопки"
-                      className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
-                    />
-                    <input
-                      type="text"
-                      value={btn.url || ''}
-                      onChange={e => updateButton(row.id, btn.id, 'url', e.target.value)}
-                      placeholder="https://..."
-                      className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-xs text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
-                    />
+          <div className="space-y-3">
+            {message.buttonRows.map(row => (
+              <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
+                {row.buttons.map(btn => (
+                  <div key={btn.id} className="flex items-start gap-2">
+                    <GripVertical size={14} className="mt-2.5 text-muted-foreground/50 flex-shrink-0 cursor-grab" />
+                    <div className="flex-1 space-y-1.5">
+                      <input
+                        type="text"
+                        value={btn.text}
+                        onChange={e => updateButton(row.id, btn.id, 'text', e.target.value)}
+                        placeholder="Текст кнопки"
+                        className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                      <input
+                        type="text"
+                        value={btn.url || ''}
+                        onChange={e => updateButton(row.id, btn.id, 'url', e.target.value)}
+                        placeholder="https://..."
+                        className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-xs text-primary placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeButton(row.id, btn.id)}
+                      className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
+                ))}
+                <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
-                    onClick={() => removeButton(row.id, btn.id)}
-                    className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                    onClick={() => addButtonToRow(row.id)}
+                    className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
                   >
-                    <X size={14} />
+                    + Кнопка
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeButtonRow(row.id)}
+                    className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors"
+                  >
+                    Удалить
                   </button>
                 </div>
-              ))}
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={() => addButtonToRow(row.id)}
-                  className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
-                >
-                  + Кнопка
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeButtonRow(row.id)}
-                  className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors"
-                >
-                  Удалить
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
