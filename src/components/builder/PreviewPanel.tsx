@@ -16,8 +16,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
 
     if (message.platform === 'html') {
-      // For HTML mode, render raw HTML directly
-      return <span dangerouslySetInnerHTML={{ __html: text }} />;
+      return null; // HTML rendered separately via iframe
     }
 
     let html = text;
