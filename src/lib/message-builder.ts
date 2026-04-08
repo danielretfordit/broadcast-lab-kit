@@ -1,6 +1,6 @@
 import { escapeMarkdownV2Plain, prepareMarkdownV2 } from '@/lib/markdown';
 
-export type Platform = 'telegram' | 'max';
+export type Platform = 'telegram' | 'max' | 'html';
 
 export interface InlineButton {
   id: string;
@@ -113,6 +113,100 @@ export function buildMaxJson(msg: MessageData): object {
 
 export function buildJson(msg: MessageData): object {
   return msg.platform === 'telegram' ? buildTelegramJson(msg) : buildMaxJson(msg);
+}
+
+/** Reverse-parse a Telegram JSON object into MessageData fields */
+export function parseTelegramJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const result: Partial<MessageData> = {};
+
+  if (parsed.chat_id != null) result.chatId = String(parsed.chat_id);
+  if (typeof parsed.text === 'string') result.text = parsed.text;
+  if (typeof parsed.caption === 'string') result.text = parsed.caption;
+  if (typeof parsed.parse_mode === 'string') {
+    result.parseMode = parsed.parse_mode as 'MarkdownV2' | 'HTML';
+  }
+
+  // Media
+  const mediaKeys = ['photo', 'video', 'document'] as const;
+  let foundMedia = false;
+  for (const key of mediaKeys) {
+    if (typeof parsed[key] === 'string') {
+      result.mediaType = key;
+      result.mediaUrl = parsed[key] as string;
+      foundMedia = true;
+      break;
+    }
+  }
+  if (!foundMedia) {
+    result.mediaType = 'none';
+    result.mediaUrl = '';
+  }
+
+  // Buttons
+  const replyMarkup = parsed.reply_markup as Record<string, unknown> | undefined;
+  if (replyMarkup?.inline_keyboard && Array.isArray(replyMarkup.inline_keyboard)) {
+    result.buttonRows = (replyMarkup.inline_keyboard as Record<string, string>[][]).map(row => ({
+      id: generateId(),
+      buttons: row.map(btn => ({
+        id: generateId(),
+        text: btn.text || '',
+        url: btn.url || '',
+        callback_data: btn.callback_data || '',
+      })),
+    }));
+  } else {
+    result.buttonRows = [];
+  }
+
+  return result;
+}
+
+/** Reverse-parse a MAX JSON object into MessageData fields */
+export function parseMaxJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const result: Partial<MessageData> = {};
+
+  if (typeof parsed.text === 'string') result.text = parsed.text;
+  if (parsed.format === 'html') result.parseMode = 'HTML';
+  else result.parseMode = 'MarkdownV2';
+
+  result.mediaType = 'none';
+  result.mediaUrl = '';
+  result.buttonRows = [];
+
+  if (Array.isArray(parsed.attachments)) {
+    for (const att of parsed.attachments as Record<string, unknown>[]) {
+      if (att.type === 'image' || att.type === 'video' || att.type === 'file') {
+        const typeMap: Record<string, 'photo' | 'video' | 'document'> = {
+          image: 'photo', video: 'video', file: 'document',
+        };
+        result.mediaType = typeMap[att.type as string] || 'none';
+        const payload = att.payload as Record<string, string> | undefined;
+        result.mediaUrl = payload?.url || '';
+      }
+      if (att.type === 'inline_keyboard') {
+        const payload = att.payload as Record<string, unknown> | undefined;
+        if (payload?.buttons && Array.isArray(payload.buttons)) {
+          result.buttonRows = (payload.buttons as Record<string, string>[][]).map(row => ({
+            id: generateId(),
+            buttons: (Array.isArray(row) ? row : [row]).map(btn => ({
+              id: generateId(),
+              text: btn.text || '',
+              url: btn.url || '',
+              callback_data: btn.payload || '',
+            })),
+          }));
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Parse JSON string back to MessageData fields based on current platform */
+export function parseJsonToMessage(jsonStr: string, platform: Platform): Partial<MessageData> {
+  const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+  return platform === 'telegram' ? parseTelegramJson(parsed) : parseMaxJson(parsed);
 }
 
 export function validateJson(jsonStr: string): { valid: boolean; error?: string } {

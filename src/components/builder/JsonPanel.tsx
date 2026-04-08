@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildJson, validateJson, extractJsonFromText } from '@/lib/message-builder';
+import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage } from '@/lib/message-builder';
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,7 +31,6 @@ export default function JsonPanel() {
       try {
         JSON.parse(pasted);
       } catch {
-        // Try to extract/repair JSON
         const repaired = extractJsonFromText(pasted);
         const result = validateJson(repaired);
         if (result.valid) {
@@ -59,12 +58,8 @@ export default function JsonPanel() {
   const applyJsonChanges = () => {
     if (!validation.valid) return;
     try {
-      const parsed = JSON.parse(jsonText);
-      setMessage(prev => ({
-        ...prev,
-        text: parsed.text ?? parsed.caption ?? prev.text,
-        chatId: parsed.chat_id != null ? String(parsed.chat_id) : prev.chatId,
-      }));
+      const updates = parseJsonToMessage(jsonText, message.platform);
+      setMessage(prev => ({ ...prev, ...updates }));
       setEditMode(false);
       toast.success('Изменения применены');
     } catch {
