@@ -1,6 +1,6 @@
+import { useMemo } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { ExternalLink, Save } from 'lucide-react';
-import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
