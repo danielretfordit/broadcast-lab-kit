@@ -1,15 +1,16 @@
 import { useMessage } from '@/contexts/MessageContext';
 import { Platform } from '@/lib/message-builder';
 import { useProjectInfo } from '@/hooks/useProjectInfo';
-import { Info } from 'lucide-react';
+import { Info, Code2 } from 'lucide-react';
 import maxLogo from '@/assets/max-logo.png';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
-const platforms: { id: Platform; label: string; logo: string }[] = [
+const platforms: { id: Platform; label: string; logo?: string; icon?: typeof Code2 }[] = [
   { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
   { id: 'max', label: 'MAX', logo: maxLogo },
+  { id: 'html', label: 'HTML', icon: Code2 },
 ];
 
 export default function AppHeader() {
@@ -84,7 +85,11 @@ export default function AppHeader() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <img src={p.logo} alt={p.label} className="w-4 h-4" />
+            {p.logo ? (
+              <img src={p.logo} alt={p.label} className="w-4 h-4" />
+            ) : p.icon ? (
+              <p.icon size={14} />
+            ) : null}
             {p.label}
           </button>
         ))}
