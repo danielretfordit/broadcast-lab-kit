@@ -26,7 +26,7 @@ export default function AppHeader() {
             OB
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-tight text-foreground">Omni-Builder</h1>
+            <h1 className="text-sm font-bold tracking-tight text-foreground">CRM Ads</h1>
             <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium">
               Конструктор рассылок
             </p>
