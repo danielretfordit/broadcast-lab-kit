@@ -53,7 +53,7 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="relative flex-1 min-h-0 rounded-lg border border-border overflow-hidden bg-[hsl(220,15%,8%)]">
+      <div className="relative flex-1 min-h-0 rounded-lg border border-border overflow-hidden bg-card">
         {/* Highlighted layer */}
         <pre
           ref={codeRef}
@@ -72,7 +72,7 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
           onScroll={syncScroll}
           placeholder=""
           spellCheck={false}
-          className="absolute inset-0 w-full h-full p-3 m-0 text-sm leading-relaxed font-mono whitespace-pre-wrap break-words bg-transparent text-transparent caret-white resize-none focus:outline-none selection:bg-primary/30"
+          className="absolute inset-0 w-full h-full p-3 m-0 text-sm leading-relaxed font-mono whitespace-pre-wrap break-words bg-transparent text-transparent caret-foreground resize-none focus:outline-none selection:bg-primary/30"
         />
       </div>
       {errors.length > 0 && (

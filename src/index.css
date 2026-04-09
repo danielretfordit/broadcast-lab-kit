@@ -87,12 +87,12 @@
   @apply text-[11px] font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-2 block;
 }
 
-/* Prism.js dark theme for HTML editor */
-.token.tag { color: #e06c75; }
-.token.attr-name { color: #d19a66; }
-.token.attr-value { color: #98c379; }
-.token.punctuation { color: #abb2bf; }
-.token.comment { color: #5c6370; font-style: italic; }
-.token.doctype { color: #c678dd; }
-.token.entity { color: #56b6c2; }
-.token.prolog { color: #5c6370; }
+/* Prism.js light theme for HTML editor */
+.token.tag { color: #e45649; }
+.token.attr-name { color: #986801; }
+.token.attr-value { color: #50a14f; }
+.token.punctuation { color: #383a42; }
+.token.comment { color: #a0a1a7; font-style: italic; }
+.token.doctype { color: #a626a4; }
+.token.entity { color: #0184bc; }
+.token.prolog { color: #a0a1a7; }
