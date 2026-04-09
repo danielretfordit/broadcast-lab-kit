@@ -23,7 +23,7 @@ export default function AppHeader() {
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shadow-sm">
-            OB
+            CA
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-foreground">CRM Ads</h1>
