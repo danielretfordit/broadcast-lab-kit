@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2 } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, GripVertical, Sparkles, Loader2, Code2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import HtmlCodeEditor from './HtmlCodeEditor';
 
 export default function EditorPanel() {
   const { message, updateField } = useMessage();
@@ -24,7 +25,7 @@ export default function EditorPanel() {
     if (message.parseMode === 'MarkdownV2') {
       const isMax = message.platform === 'max';
       if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
-      else if (tag === 'italic') wrapped = `_${selected || 'текст'}_`;
+      else if (tag === 'italic') wrapped = isMax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
       else if (tag === 'underline') wrapped = isMax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
       else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
@@ -88,6 +89,52 @@ export default function EditorPanel() {
     { id: 'document' as const, icon: FileText, label: 'Файл' },
   ];
 
+  const mediaPlaceholders: Record<string, string> = {
+    photo: 'https://example.com/image.jpg',
+    video: 'https://example.com/video.mp4',
+    document: 'https://example.com/document.pdf',
+  };
+
+  const handleAiMessenger = async () => {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-message-editor', {
+        body: { prompt: aiPrompt, currentText: message.text, parseMode: message.parseMode },
+      });
+      if (error) throw error;
+      if (data?.text) {
+        updateField('text', data.text);
+        setAiPrompt('');
+        toast.success('Текст обновлён с помощью AI');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Ошибка AI');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAiHtml = async () => {
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-html-editor', {
+        body: { prompt: aiPrompt, currentHtml: message.text },
+      });
+      if (error) throw error;
+      if (data?.html) {
+        updateField('text', data.html);
+        setAiPrompt('');
+        toast.success('HTML шаблон обновлён с помощью AI');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || 'Ошибка AI');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5 pb-10">
       {/* Media - hidden for HTML */}
@@ -116,7 +163,7 @@ export default function EditorPanel() {
               type="text"
               value={message.mediaUrl}
               onChange={e => updateField('mediaUrl', e.target.value)}
-              placeholder="https://example.com/image.jpg"
+              placeholder={mediaPlaceholders[message.mediaType] || 'https://...'}
               className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
           )}
@@ -140,7 +187,11 @@ export default function EditorPanel() {
       {/* Message Body */}
       <section className="flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">
-          <label className="section-label !mb-0">{isHtml ? 'HTML код' : 'Текст сообщения'}</label>
+          <label className="section-label !mb-0">
+            {isHtml ? (
+              <span className="flex items-center gap-1.5"><Code2 size={12} /> HTML код шаблона</span>
+            ) : 'Текст сообщения'}
+          </label>
           {!isHtml && (
             <select
               value={message.parseMode}
@@ -175,19 +226,25 @@ export default function EditorPanel() {
           </div>
         )}
 
-        <textarea
-          id="msg-body"
-          value={message.text}
-          onChange={e => updateField('text', e.target.value)}
-          placeholder={isHtml
-            ? '<html>\n<body>\n  <h1>Заголовок</h1>\n  <p>Контент письма...</p>\n</body>\n</html>'
-            : message.parseMode === 'MarkdownV2'
-              ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
-              : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'}
-          className={`w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y ${
-            isHtml ? 'flex-1 min-h-[400px]' : 'min-h-[180px]'
-          }`}
-        />
+        {isHtml ? (
+          <HtmlCodeEditor
+            value={message.text}
+            onChange={v => updateField('text', v)}
+            placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  <h1>Заголовок</h1>&#10;</body>&#10;</html>"
+          />
+        ) : (
+          <textarea
+            id="msg-body"
+            value={message.text}
+            onChange={e => updateField('text', e.target.value)}
+            placeholder={
+              message.parseMode === 'MarkdownV2'
+                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
+                : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'
+            }
+            className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
+          />
+        )}
       </section>
 
       {/* AI Editor */}
@@ -198,42 +255,28 @@ export default function EditorPanel() {
           className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors"
         >
           <Sparkles size={14} />
-          AI-редактор сообщения
+          {isHtml ? 'AI-генератор HTML шаблонов' : 'AI-редактор сообщения'}
         </button>
         {showAi && (
           <div className="mt-2 space-y-2">
             <textarea
               value={aiPrompt}
               onChange={e => setAiPrompt(e.target.value)}
-              placeholder="Опишите что сделать с текстом: «Сделай более продающим», «Добавь эмодзи», «Переведи на английский»..."
+              placeholder={
+                isHtml
+                  ? 'Опишите шаблон: «Создай email для акции -20%», «Добавь кнопку CTA», «Сделай в корпоративном стиле»...'
+                  : 'Опишите что сделать с текстом: «Сделай более продающим», «Добавь эмодзи», «Переведи на английский»...'
+              }
               className="w-full min-h-[80px] px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
             />
             <button
               type="button"
               disabled={aiLoading || !aiPrompt.trim()}
-              onClick={async () => {
-                setAiLoading(true);
-                try {
-                  const { data, error } = await supabase.functions.invoke('ai-message-editor', {
-                    body: { prompt: aiPrompt, currentText: message.text, parseMode: message.parseMode },
-                  });
-                  if (error) throw error;
-                  if (data?.text) {
-                    updateField('text', data.text);
-                    setAiPrompt('');
-                    toast.success('Текст обновлён с помощью AI');
-                  }
-                } catch (err: any) {
-                  console.error(err);
-                  toast.error(err?.message || 'Ошибка AI');
-                } finally {
-                  setAiLoading(false);
-                }
-              }}
+              onClick={isHtml ? handleAiHtml : handleAiMessenger}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {aiLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-              {aiLoading ? 'Генерация...' : 'Применить AI'}
+              {aiLoading ? 'Генерация...' : isHtml ? 'Сгенерировать HTML' : 'Применить AI'}
             </button>
           </div>
         )}
