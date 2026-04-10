@@ -1,4 +1,4 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
 
@@ -23,6 +23,10 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
       codeRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
   }, []);
+
+  useLayoutEffect(() => {
+    syncScroll();
+  }, [value, syncScroll]);
 
   // Validation
   const errors: string[] = [];
@@ -58,11 +62,12 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
         {/* Highlighted layer */}
         <pre
           ref={codeRef}
-          className="absolute inset-0 p-3 m-0 overflow-hidden pointer-events-none text-sm leading-[1.6] font-mono whitespace-pre-wrap break-words"
+          className="absolute inset-0 m-0 overflow-auto pointer-events-none text-sm leading-[1.6] font-mono whitespace-pre-wrap break-normal [overflow-wrap:normal] [word-break:normal]"
           style={{ tabSize: 2 }}
           aria-hidden="true"
         >
           <code
+            className="block min-h-full p-3"
             dangerouslySetInnerHTML={{ __html: highlighted || `<span style="color:hsl(var(--muted-foreground))">${placeholder || ''}</span>` }}
           />
         </pre>
@@ -72,11 +77,14 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
           value={value}
           onChange={e => onChange(e.target.value)}
           onScroll={syncScroll}
+          onInput={syncScroll}
+          onKeyUp={syncScroll}
+          onClick={syncScroll}
+          onSelect={syncScroll}
           placeholder=""
           spellCheck={false}
-          wrap="off"
-          className="absolute inset-0 w-full h-full p-3 m-0 text-sm leading-[1.6] font-mono whitespace-pre-wrap break-words bg-transparent text-transparent caret-foreground resize-none focus:outline-none selection:bg-primary/30"
-          style={{ tabSize: 2, WebkitTextFillColor: 'transparent' }}
+          className="absolute inset-0 w-full h-full p-3 m-0 overflow-auto border-0 text-sm leading-[1.6] font-mono whitespace-pre-wrap break-normal [overflow-wrap:normal] [word-break:normal] bg-transparent text-transparent caret-foreground resize-none focus:outline-none selection:bg-primary/20"
+          style={{ tabSize: 2, WebkitTextFillColor: 'transparent', caretColor: 'hsl(var(--foreground))' }}
         />
       </div>
       {errors.length > 0 && (
