@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
 
@@ -12,9 +12,10 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
   const codeRef = useRef<HTMLPreElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const highlighted = value
-    ? Prism.highlight(value, Prism.languages.markup, 'markup')
-    : '';
+  const highlighted = useMemo(
+    () => (value ? Prism.highlight(value, Prism.languages.markup, 'markup') : ''),
+    [value]
+  );
 
   const syncScroll = useCallback(() => {
     if (textareaRef.current && codeRef.current) {
@@ -57,7 +58,8 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
         {/* Highlighted layer */}
         <pre
           ref={codeRef}
-          className="absolute inset-0 p-3 m-0 overflow-hidden pointer-events-none text-sm leading-relaxed font-mono whitespace-pre-wrap break-words"
+          className="absolute inset-0 p-3 m-0 overflow-hidden pointer-events-none text-sm leading-[1.6] font-mono whitespace-pre-wrap break-words"
+          style={{ tabSize: 2 }}
           aria-hidden="true"
         >
           <code
@@ -72,7 +74,9 @@ export default function HtmlCodeEditor({ value, onChange, placeholder }: HtmlCod
           onScroll={syncScroll}
           placeholder=""
           spellCheck={false}
-          className="absolute inset-0 w-full h-full p-3 m-0 text-sm leading-relaxed font-mono whitespace-pre-wrap break-words bg-transparent text-transparent caret-foreground resize-none focus:outline-none selection:bg-primary/30"
+          wrap="off"
+          className="absolute inset-0 w-full h-full p-3 m-0 text-sm leading-[1.6] font-mono whitespace-pre-wrap break-words bg-transparent text-transparent caret-foreground resize-none focus:outline-none selection:bg-primary/30"
+          style={{ tabSize: 2, WebkitTextFillColor: 'transparent' }}
         />
       </div>
       {errors.length > 0 && (
