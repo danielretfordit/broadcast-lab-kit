@@ -135,8 +135,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               <div className="mt-2 space-y-1.5 max-w-xl">
                 {message.buttonRows.map(row => (
                   <div key={row.id} className="flex gap-1.5">
-                    {row.buttons.map(btn => (
-                      {btn.url ? (
+                    {row.buttons.map(btn =>
+                      btn.url ? (
                         <a
                           key={btn.id}
                           href={btn.url}
@@ -163,8 +163,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                         >
                           {btn.text}
                         </button>
-                      )}
-                    ))}
+                      )
+                    )}
                   </div>
                 ))}
               </div>
