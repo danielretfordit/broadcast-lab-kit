@@ -136,18 +136,34 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 {message.buttonRows.map(row => (
                   <div key={row.id} className="flex gap-1.5">
                     {row.buttons.map(btn => (
-                      <button
-                        key={btn.id}
-                        type="button"
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                          isTelegram
-                            ? 'border-info/30 text-info bg-info/5 hover:bg-info/10'
-                            : 'border-accent/30 text-accent bg-accent/5 hover:bg-accent/10'
-                        }`}
-                      >
-                        {btn.url && <ExternalLink size={12} />}
-                        {btn.text}
-                      </button>
+                      {btn.url ? (
+                        <a
+                          key={btn.id}
+                          href={btn.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer no-underline ${
+                            isTelegram
+                              ? 'border-info/30 text-info bg-info/5 hover:bg-info/10'
+                              : 'border-accent/30 text-accent bg-accent/5 hover:bg-accent/10'
+                          }`}
+                        >
+                          <ExternalLink size={12} />
+                          {btn.text}
+                        </a>
+                      ) : (
+                        <button
+                          key={btn.id}
+                          type="button"
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                            isTelegram
+                              ? 'border-info/30 text-info bg-info/5 hover:bg-info/10'
+                              : 'border-accent/30 text-accent bg-accent/5 hover:bg-accent/10'
+                          }`}
+                        >
+                          {btn.text}
+                        </button>
+                      )}
                     ))}
                   </div>
                 ))}

@@ -146,7 +146,10 @@ export default function EditorPanel() {
               <button
                 key={mt.id}
                 type="button"
-                onClick={() => updateField('mediaType', mt.id)}
+                onClick={() => {
+                  updateField('mediaType', mt.id);
+                  if (mt.id !== message.mediaType) updateField('mediaUrl', '');
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                   message.mediaType === mt.id
                     ? 'bg-primary/10 text-primary border border-primary/25 shadow-sm'
@@ -301,7 +304,7 @@ export default function EditorPanel() {
               <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
                 {row.buttons.map(btn => (
                   <div key={btn.id} className="flex items-start gap-2">
-                    <GripVertical size={14} className="mt-2.5 text-muted-foreground/50 flex-shrink-0 cursor-grab" />
+                    
                     <div className="flex-1 space-y-1.5">
                       <input
                         type="text"
