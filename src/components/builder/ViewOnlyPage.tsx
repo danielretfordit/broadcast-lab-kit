@@ -3,8 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 import { useMessage } from '@/contexts/MessageContext';
 import PreviewPanel from '@/components/builder/PreviewPanel';
 import { Loader2 } from 'lucide-react';
+import { Platform } from '@/lib/message-builder';
 
-export default function ViewOnlyPage() {
+interface ViewOnlyPageProps {
+  lockedChannel?: Platform | null;
+}
+
+export default function ViewOnlyPage({ lockedChannel }: ViewOnlyPageProps) {
   const [searchParams] = useSearchParams();
   const { setMessage } = useMessage();
   const [loading, setLoading] = useState(true);
@@ -19,21 +24,14 @@ export default function ViewOnlyPage() {
       return;
     }
 
-    // TODO: Replace with actual API call
-    // Example: fetch(`/api/templates/${guid}`)
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     setMessage(prev => ({ ...prev, ...data }));
-    //     setLoading(false);
-    //   })
+    // TODO: replace with API call to load template by guid
+    if (lockedChannel) {
+      setMessage(prev => ({ ...prev, platform: lockedChannel }));
+    }
 
-    // For now, simulate loading and show what's in localStorage
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-
+    const timer = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(timer);
-  }, [guid, setMessage]);
+  }, [guid, lockedChannel, setMessage]);
 
   if (loading) {
     return (
@@ -59,11 +57,10 @@ export default function ViewOnlyPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-background">
-      {/* Minimal header */}
       <header className="flex items-center px-5 py-3 border-b border-border bg-card">
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-[10px] shadow-sm">
-            OB
+            CA
           </div>
           <div>
             <h1 className="text-sm font-bold text-foreground">Просмотр шаблона</h1>
@@ -72,7 +69,6 @@ export default function ViewOnlyPage() {
         </div>
       </header>
 
-      {/* Preview only */}
       <div className="flex-1 overflow-hidden flex justify-center">
         <div className="w-full max-w-2xl">
           <PreviewPanel viewOnly />
