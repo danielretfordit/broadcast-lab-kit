@@ -15,8 +15,20 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
 
-    let html = text;
-    if (message.parseMode === 'MarkdownV2') {
+    // Render blockquotes: lines starting with "> "
+    const lines = text.split('\n');
+    const groups: { quote: boolean; text: string }[] = [];
+    for (const ln of lines) {
+      const isQuote = /^>\s?/.test(ln);
+      const content = isQuote ? ln.replace(/^>\s?/, '') : ln;
+      const last = groups[groups.length - 1];
+      if (last && last.quote === isQuote) last.text += '\n' + content;
+      else groups.push({ quote: isQuote, text: content });
+    }
+
+    const renderInline = (raw: string) => {
+      let html = raw;
+      if (message.parseMode === 'MarkdownV2') {
       const isMax = message.platform === 'max';
       html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener">$1</a>');
       html = html.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs font-mono">$1</code>');
