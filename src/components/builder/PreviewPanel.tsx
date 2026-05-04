@@ -83,12 +83,20 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     <div className="flex flex-col h-full">
       <div className={`flex-1 overflow-y-auto ${isHtml ? 'p-0' : 'p-6'}`}>
         {isHtml ? (
-          <iframe
-            title="HTML Preview"
-            srcDoc={message.text || '<p style="color:#999;padding:20px;font-family:sans-serif;">Введите HTML код в редакторе...</p>'}
-            className="w-full h-full border-0"
-            sandbox="allow-same-origin"
-          />
+          <div className="flex flex-col h-full">
+            <div className="px-5 py-3 border-b border-border bg-muted/40">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Тема письма</p>
+              <p className="text-sm font-semibold text-foreground truncate">
+                {message.subject || <span className="text-muted-foreground italic font-normal">Не указана</span>}
+              </p>
+            </div>
+            <iframe
+              title="HTML Preview"
+              srcDoc={message.text || '<p style="color:#999;padding:20px;font-family:sans-serif;">Введите HTML код в редакторе...</p>'}
+              className="w-full flex-1 border-0"
+              sandbox="allow-same-origin"
+            />
+          </div>
         ) : (
           <>
             <div className="flex items-center gap-2 mb-4">
