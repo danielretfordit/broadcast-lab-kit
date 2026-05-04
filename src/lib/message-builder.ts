@@ -20,6 +20,7 @@ export interface MessageData {
   mediaUrl: string;
   mediaType: 'photo' | 'video' | 'document' | 'none';
   text: string;
+  subject: string;
   parseMode: 'MarkdownV2' | 'HTML';
   buttonRows: ButtonRow[];
 }
@@ -35,13 +36,14 @@ export function createEmptyMessage(): MessageData {
     mediaUrl: '',
     mediaType: 'none',
     text: '',
+    subject: '',
     parseMode: 'MarkdownV2',
     buttonRows: [],
   };
 }
 
 export function buildTelegramJson(msg: MessageData): object {
-  const processedText = msg.parseMode === 'MarkdownV2' 
+  const processedText = msg.parseMode === 'MarkdownV2'
     ? prepareMarkdownV2(msg.text)
     : msg.text;
 
@@ -111,8 +113,26 @@ export function buildMaxJson(msg: MessageData): object {
   };
 }
 
+export function buildEmailJson(msg: MessageData): object {
+  return {
+    format: 'html',
+    subject: msg.subject || '',
+    html: msg.text || '',
+  };
+}
+
 export function buildJson(msg: MessageData): object {
-  return msg.platform === 'telegram' ? buildTelegramJson(msg) : buildMaxJson(msg);
+  if (msg.platform === 'telegram') return buildTelegramJson(msg);
+  if (msg.platform === 'max') return buildMaxJson(msg);
+  return buildEmailJson(msg);
+}
+
+/** Determine Telegram API method from message */
+export function getTelegramMethod(msg: MessageData): string {
+  if (msg.mediaType !== 'none' && msg.mediaUrl) {
+    return `send${msg.mediaType.charAt(0).toUpperCase()}${msg.mediaType.slice(1)}`;
+  }
+  return 'sendMessage';
 }
 
 /** Reverse-parse a Telegram JSON object into MessageData fields */
@@ -126,7 +146,6 @@ export function parseTelegramJson(parsed: Record<string, unknown>): Partial<Mess
     result.parseMode = parsed.parse_mode as 'MarkdownV2' | 'HTML';
   }
 
-  // Media
   const mediaKeys = ['photo', 'video', 'document'] as const;
   let foundMedia = false;
   for (const key of mediaKeys) {
@@ -142,7 +161,6 @@ export function parseTelegramJson(parsed: Record<string, unknown>): Partial<Mess
     result.mediaUrl = '';
   }
 
-  // Buttons
   const replyMarkup = parsed.reply_markup as Record<string, unknown> | undefined;
   if (replyMarkup?.inline_keyboard && Array.isArray(replyMarkup.inline_keyboard)) {
     result.buttonRows = (replyMarkup.inline_keyboard as Record<string, string>[][]).map(row => ({
@@ -161,7 +179,6 @@ export function parseTelegramJson(parsed: Record<string, unknown>): Partial<Mess
   return result;
 }
 
-/** Reverse-parse a MAX JSON object into MessageData fields */
 export function parseMaxJson(parsed: Record<string, unknown>): Partial<MessageData> {
   const result: Partial<MessageData> = {};
 
@@ -203,10 +220,22 @@ export function parseMaxJson(parsed: Record<string, unknown>): Partial<MessageDa
   return result;
 }
 
-/** Parse JSON string back to MessageData fields based on current platform */
+export function parseEmailJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  return {
+    subject: typeof parsed.subject === 'string' ? parsed.subject : '',
+    text: typeof parsed.html === 'string' ? parsed.html : (typeof parsed.text === 'string' ? parsed.text : ''),
+    parseMode: 'HTML',
+    mediaType: 'none',
+    mediaUrl: '',
+    buttonRows: [],
+  };
+}
+
 export function parseJsonToMessage(jsonStr: string, platform: Platform): Partial<MessageData> {
   const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
-  return platform === 'telegram' ? parseTelegramJson(parsed) : parseMaxJson(parsed);
+  if (platform === 'telegram') return parseTelegramJson(parsed);
+  if (platform === 'max') return parseMaxJson(parsed);
+  return parseEmailJson(parsed);
 }
 
 export function validateJson(jsonStr: string): { valid: boolean; error?: string } {
@@ -218,7 +247,6 @@ export function validateJson(jsonStr: string): { valid: boolean; error?: string 
   }
 }
 
-/** Try to extract and repair JSON from arbitrary text */
 export function extractJsonFromText(text: string): string {
   let cleaned = text
     .replace(/```json\s*/gi, '')
@@ -234,9 +262,7 @@ export function extractJsonFromText(text: string): string {
   }
 
   cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-  // Fix trailing commas
   cleaned = cleaned.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-  // Remove control characters
   cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, (c) => c === '\n' || c === '\t' ? c : '');
 
   return cleaned;

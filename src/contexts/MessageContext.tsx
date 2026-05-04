@@ -1,22 +1,27 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { MessageData, createEmptyMessage, Platform } from '@/lib/message-builder';
 
-const STORAGE_KEY = 'omni-builder-draft';
+const STORAGE_PREFIX = 'omni-builder-draft:';
 
-function loadDraft(): MessageData {
+function storageKey(platform: Platform) {
+  return `${STORAGE_PREFIX}${platform}`;
+}
+
+function loadDraft(platform: Platform): MessageData {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(platform));
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...createEmptyMessage(), ...parsed };
+      return { ...createEmptyMessage(), ...parsed, platform };
     }
   } catch {}
-  return createEmptyMessage();
+  const empty = createEmptyMessage();
+  return { ...empty, platform, parseMode: platform === 'html' ? 'HTML' : empty.parseMode };
 }
 
 function saveDraft(msg: MessageData) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(msg));
+    localStorage.setItem(storageKey(msg.platform), JSON.stringify(msg));
   } catch {}
 }
 
@@ -25,30 +30,64 @@ interface MessageContextType {
   setMessage: React.Dispatch<React.SetStateAction<MessageData>>;
   updateField: <K extends keyof MessageData>(key: K, value: MessageData[K]) => void;
   setPlatform: (p: Platform) => void;
+  resetDraft: () => void;
 }
 
 const MessageContext = createContext<MessageContextType | null>(null);
 
-export function MessageProvider({ children }: { children: React.ReactNode }) {
-  const [message, setMessage] = useState<MessageData>(loadDraft);
+interface MessageProviderProps {
+  children: React.ReactNode;
+  initialPlatform?: Platform;
+  skipPersistence?: boolean;
+}
+
+export function MessageProvider({ children, initialPlatform, skipPersistence }: MessageProviderProps) {
+  const [message, setMessage] = useState<MessageData>(() => {
+    if (skipPersistence) {
+      const empty = createEmptyMessage();
+      const platform = initialPlatform || 'telegram';
+      return { ...empty, platform, parseMode: platform === 'html' ? 'HTML' : empty.parseMode };
+    }
+    return loadDraft(initialPlatform || 'telegram');
+  });
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
+    if (skipPersistence) return;
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => saveDraft(message), 300);
     return () => clearTimeout(saveTimer.current);
-  }, [message]);
+  }, [message, skipPersistence]);
 
   const updateField = useCallback(<K extends keyof MessageData>(key: K, value: MessageData[K]) => {
     setMessage(prev => ({ ...prev, [key]: value }));
   }, []);
 
   const setPlatform = useCallback((p: Platform) => {
-    setMessage(prev => ({ ...prev, platform: p }));
+    setMessage(prev => {
+      // Save current platform draft before switching
+      if (!skipPersistence) saveDraft(prev);
+      // Load draft for the new platform (or empty)
+      const next = loadDraft(p);
+      return next;
+    });
+  }, [skipPersistence]);
+
+  const resetDraft = useCallback(() => {
+    setMessage(prev => {
+      const empty = createEmptyMessage();
+      const next: MessageData = {
+        ...empty,
+        platform: prev.platform,
+        parseMode: prev.platform === 'html' ? 'HTML' : empty.parseMode,
+      };
+      try { localStorage.removeItem(storageKey(prev.platform)); } catch {}
+      return next;
+    });
   }, []);
 
   return (
-    <MessageContext.Provider value={{ message, setMessage, updateField, setPlatform }}>
+    <MessageContext.Provider value={{ message, setMessage, updateField, setPlatform, resetDraft }}>
       {children}
     </MessageContext.Provider>
   );
