@@ -15,29 +15,56 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
 
-    let html = text;
-    if (message.parseMode === 'MarkdownV2') {
-      const isMax = message.platform === 'max';
-      html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener">$1</a>');
-      html = html.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs font-mono">$1</code>');
-      if (isMax) {
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-        html = html.replace(/\+\+([^+]+)\+\+/g, '<u>$1</u>');
-        html = html.replace(/~~([^~]+)~~/g, '<s>$1</s>');
-        html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+    const renderInline = (raw: string): string => {
+      let html = raw;
+      if (message.parseMode === 'MarkdownV2') {
+        const isMax = message.platform === 'max';
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener">$1</a>');
+        html = html.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs font-mono">$1</code>');
+        if (isMax) {
+          html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+          html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+          html = html.replace(/\+\+([^+]+)\+\+/g, '<u>$1</u>');
+          html = html.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+          html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+          html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        } else {
+          html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
+          html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
+          html = html.replace(/~([^~]+)~/g, '<s>$1</s>');
+          html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        }
+        html = html.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
       } else {
-        html = html.replace(/\*([^*]+)\*/g, '<strong>$1</strong>');
-        html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
-        html = html.replace(/~([^~]+)~/g, '<s>$1</s>');
-        html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+        // HTML mode: convert <blockquote> to styled markup
+        html = html.replace(/<blockquote>([\s\S]*?)<\/blockquote>/gi,
+          '<blockquote class="border-l-2 border-primary pl-2 my-1 text-muted-foreground italic">$1</blockquote>');
       }
-      html = html.replace(/\\([_*\[\]()~`>#+\-=|{}.!])/g, '$1');
-    }
-    html = html.replace(/\n/g, '<br/>');
+      html = html.replace(/\n/g, '<br/>');
+      return html;
+    };
 
-    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+    // Group consecutive "> " lines into blockquotes (markdown only)
+    if (message.parseMode === 'MarkdownV2') {
+      const lines = text.split('\n');
+      const groups: { quote: boolean; lines: string[] }[] = [];
+      for (const ln of lines) {
+        const isQuote = /^>\s?/.test(ln);
+        const content = isQuote ? ln.replace(/^>\s?/, '') : ln;
+        const last = groups[groups.length - 1];
+        if (last && last.quote === isQuote) last.lines.push(content);
+        else groups.push({ quote: isQuote, lines: [content] });
+      }
+      const out = groups.map(g => {
+        const inner = renderInline(g.lines.join('\n'));
+        return g.quote
+          ? `<blockquote class="border-l-2 border-primary pl-2 my-1 text-muted-foreground italic">${inner}</blockquote>`
+          : inner;
+      }).join('');
+      return <span dangerouslySetInnerHTML={{ __html: out }} />;
+    }
+
+    return <span dangerouslySetInnerHTML={{ __html: renderInline(text) }} />;
   };
 
   const isTelegram = message.platform === 'telegram';
@@ -56,12 +83,20 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     <div className="flex flex-col h-full">
       <div className={`flex-1 overflow-y-auto ${isHtml ? 'p-0' : 'p-6'}`}>
         {isHtml ? (
-          <iframe
-            title="HTML Preview"
-            srcDoc={message.text || '<p style="color:#999;padding:20px;font-family:sans-serif;">Введите HTML код в редакторе...</p>'}
-            className="w-full h-full border-0"
-            sandbox="allow-same-origin"
-          />
+          <div className="flex flex-col h-full">
+            <div className="px-5 py-3 border-b border-border bg-muted/40">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Тема письма</p>
+              <p className="text-sm font-semibold text-foreground truncate">
+                {message.subject || <span className="text-muted-foreground italic font-normal">Не указана</span>}
+              </p>
+            </div>
+            <iframe
+              title="HTML Preview"
+              srcDoc={message.text || '<p style="color:#999;padding:20px;font-family:sans-serif;">Введите HTML код в редакторе...</p>'}
+              className="w-full flex-1 border-0"
+              sandbox="allow-same-origin"
+            />
+          </div>
         ) : (
           <>
             <div className="flex items-center gap-2 mb-4">

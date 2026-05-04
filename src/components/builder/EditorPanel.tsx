@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2 } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HtmlCodeEditor from './HtmlCodeEditor';
@@ -13,6 +13,7 @@ export default function EditorPanel() {
   const [showAi, setShowAi] = useState(false);
 
   const isHtml = message.platform === 'html';
+  const mediaUrlMissing = !isHtml && message.mediaType !== 'none' && !message.mediaUrl.trim();
 
   const insertFormatting = (tag: string) => {
     const textarea = document.getElementById('msg-body') as HTMLTextAreaElement | null;
@@ -22,7 +23,15 @@ export default function EditorPanel() {
     const selected = message.text.substring(start, end);
 
     let wrapped = '';
-    if (message.parseMode === 'MarkdownV2') {
+    if (tag === 'quote') {
+      // Quote: prefix every line with "> "
+      if (message.parseMode === 'HTML') {
+        wrapped = `<blockquote>${selected || 'Цитата'}</blockquote>`;
+      } else {
+        const src = selected || 'Цитата';
+        wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
+      }
+    } else if (message.parseMode === 'MarkdownV2') {
       const isMax = message.platform === 'max';
       if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = isMax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
@@ -95,6 +104,10 @@ export default function EditorPanel() {
     document: 'https://example.com/document.pdf',
   };
 
+  const mediaLabel: Record<string, string> = {
+    photo: 'фото', video: 'видео', document: 'файл',
+  };
+
   const handleAiMessenger = async () => {
     setAiLoading(true);
     try {
@@ -124,6 +137,7 @@ export default function EditorPanel() {
       if (error) throw error;
       if (data?.html) {
         updateField('text', data.html);
+        updateField('parseMode', 'HTML');
         setAiPrompt('');
         toast.success('HTML шаблон обновлён с помощью AI');
       }
@@ -137,7 +151,21 @@ export default function EditorPanel() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-5 space-y-5 pb-10">
-      {/* Media - hidden for HTML */}
+      {/* Email subject */}
+      {isHtml && (
+        <section>
+          <label className="section-label">Тема письма</label>
+          <input
+            type="text"
+            value={message.subject}
+            onChange={e => updateField('subject', e.target.value)}
+            placeholder="Например: Скидка 20% только сегодня"
+            className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+          />
+        </section>
+      )}
+
+      {/* Media */}
       {!isHtml && (
         <section>
           <label className="section-label">Медиа контент</label>
@@ -147,8 +175,8 @@ export default function EditorPanel() {
                 key={mt.id}
                 type="button"
                 onClick={() => {
-                  updateField('mediaType', mt.id);
                   if (mt.id !== message.mediaType) updateField('mediaUrl', '');
+                  updateField('mediaType', mt.id);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                   message.mediaType === mt.id
@@ -162,18 +190,30 @@ export default function EditorPanel() {
             ))}
           </div>
           {message.mediaType !== 'none' && (
-            <input
-              type="text"
-              value={message.mediaUrl}
-              onChange={e => updateField('mediaUrl', e.target.value)}
-              placeholder={mediaPlaceholders[message.mediaType] || 'https://...'}
-              className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-            />
+            <>
+              <input
+                type="text"
+                value={message.mediaUrl}
+                onChange={e => updateField('mediaUrl', e.target.value)}
+                placeholder={mediaPlaceholders[message.mediaType] || 'https://...'}
+                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
+                  mediaUrlMissing
+                    ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
+                    : 'border-border focus:ring-primary/20 focus:border-primary/40'
+                }`}
+              />
+              {mediaUrlMissing && (
+                <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Укажите ссылку на {mediaLabel[message.mediaType]}
+                </p>
+              )}
+            </>
           )}
         </section>
       )}
 
-      {/* Chat ID - hidden for HTML */}
+      {/* Chat ID */}
       {!isHtml && (
         <section>
           <label className="section-label">Chat ID</label>
@@ -187,7 +227,7 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {/* Message Body */}
+      {/* Body */}
       <section className="flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">
           <label className="section-label !mb-0">
@@ -215,6 +255,7 @@ export default function EditorPanel() {
               { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
               { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
               { tag: 'link', icon: Link, title: 'Ссылка' },
+              { tag: 'quote', icon: Quote, title: 'Цитата' },
             ].map(({ tag, icon: Icon, title }) => (
               <button
                 key={tag}
@@ -242,8 +283,8 @@ export default function EditorPanel() {
             onChange={e => updateField('text', e.target.value)}
             placeholder={
               message.parseMode === 'MarkdownV2'
-                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)'
-                : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u> <a href="url">ссылка</a>'
+                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
+                : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
           />
@@ -267,8 +308,8 @@ export default function EditorPanel() {
               onChange={e => setAiPrompt(e.target.value)}
               placeholder={
                 isHtml
-                  ? 'Опишите шаблон: «Создай email для акции -20%», «Добавь кнопку CTA», «Сделай в корпоративном стиле»...'
-                  : 'Опишите что сделать с текстом: «Сделай более продающим», «Добавь эмодзи», «Переведи на английский»...'
+                  ? 'Опишите шаблон: «Создай email для акции -20%», «Добавь кнопку CTA»...'
+                  : 'Опишите что сделать с текстом: «Сделай более продающим», «Добавь эмодзи»...'
               }
               className="w-full min-h-[80px] px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y"
             />
@@ -285,7 +326,7 @@ export default function EditorPanel() {
         )}
       </section>
 
-      {/* Action Buttons - hidden for HTML */}
+      {/* Inline buttons */}
       {!isHtml && (
         <section>
           <div className="flex items-center justify-between mb-2">
@@ -304,7 +345,6 @@ export default function EditorPanel() {
               <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
                 {row.buttons.map(btn => (
                   <div key={btn.id} className="flex items-start gap-2">
-                    
                     <div className="flex-1 space-y-1.5">
                       <input
                         type="text"

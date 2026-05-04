@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage } from '@/lib/message-builder';
-import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye } from 'lucide-react';
+import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTelegramMethod } from '@/lib/message-builder';
+import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import BotSettingsDialog, { getBotToken } from './BotSettingsDialog';
 
 export default function JsonPanel() {
   const { message, setMessage } = useMessage();
@@ -10,8 +11,12 @@ export default function JsonPanel() {
   const [jsonText, setJsonText] = useState('');
   const [validation, setValidation] = useState<{ valid: boolean; error?: string }>({ valid: true });
   const [copied, setCopied] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const generatedJson = JSON.stringify(buildJson(message), null, 2);
+  const isTelegram = message.platform === 'telegram';
+  const isMax = message.platform === 'max';
 
   useEffect(() => {
     if (!editMode) {
@@ -67,6 +72,54 @@ export default function JsonPanel() {
     }
   };
 
+  const handleTest = async () => {
+    if (!isTelegram) {
+      toast.error('Тестирование MAX пока не поддерживается');
+      return;
+    }
+    const token = getBotToken('telegram');
+    if (!token) {
+      toast.error('Сначала укажите Bot Token в настройках');
+      setSettingsOpen(true);
+      return;
+    }
+    if (!validation.valid) {
+      toast.error('Сначала исправьте ошибки в JSON');
+      return;
+    }
+    if (!message.chatId.trim()) {
+      toast.error('Укажите Chat ID');
+      return;
+    }
+    if (message.mediaType !== 'none' && !message.mediaUrl.trim()) {
+      toast.error(`Укажите ссылку на медиа (${message.mediaType})`);
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const body = editMode ? jsonText : generatedJson;
+      const parsed = JSON.parse(body);
+      const method = getTelegramMethod(message);
+      const url = `https://api.telegram.org/bot${token}/${method}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast.success(`Сообщение отправлено • message_id: ${data.result?.message_id}`);
+      } else {
+        toast.error(`Telegram: ${data.description || 'неизвестная ошибка'}`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Ошибка сети');
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const lineCount = (editMode ? jsonText : generatedJson).split('\n').length;
 
   return (
@@ -75,7 +128,7 @@ export default function JsonPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-            JSON {message.platform === 'telegram' ? '(Telegram)' : '(MAX)'}
+            JSON {isTelegram ? '(Telegram)' : '(MAX)'}
           </h3>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
             validation.valid
@@ -164,26 +217,50 @@ export default function JsonPanel() {
         )}
       </div>
 
-      {/* Validation error */}
       {!validation.valid && validation.error && (
         <div className="px-4 py-2 border-t border-destructive/20 bg-destructive/5">
           <p className="text-xs text-destructive font-mono">{validation.error}</p>
         </div>
       )}
 
-      {/* Footer */}
+      {/* Footer info */}
       <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
         <span>
-          {message.platform === 'telegram' ? 'Telegram Bot API' : 'MAX API'} • {message.parseMode}
+          {isTelegram ? 'Telegram Bot API' : 'MAX API'} • {message.parseMode}
         </span>
         <span>
-          {message.platform === 'telegram'
-            ? message.mediaType !== 'none' && message.mediaUrl
-              ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
-              : 'sendMessage'
-            : 'messages/send'}
+          {isTelegram ? getTelegramMethod(message) : 'messages/send'}
         </span>
       </div>
+
+      {/* Settings + Test bar (subtle) */}
+      <div className="px-3 py-2 border-t border-border bg-muted/30 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+          title="Настройки токена бота (только в этой сессии)"
+        >
+          <Settings2 size={12} />
+          Настройки
+        </button>
+        <button
+          type="button"
+          onClick={handleTest}
+          disabled={testing || isMax}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          title={isMax ? 'Тестирование MAX пока недоступно' : 'Отправить тестовое сообщение'}
+        >
+          {testing ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+          {testing ? 'Отправка...' : 'Тестировать'}
+        </button>
+      </div>
+
+      <BotSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        platform={isTelegram ? 'telegram' : 'max'}
+      />
     </div>
   );
 }
