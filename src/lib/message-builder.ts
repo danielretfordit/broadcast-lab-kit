@@ -181,19 +181,38 @@ export function parseTelegramJson(parsed: Record<string, unknown>): Partial<Mess
     result.parseMode = parsed.parse_mode as 'MarkdownV2' | 'HTML';
   }
 
-  const mediaKeys = ['photo', 'video', 'document'] as const;
-  let foundMedia = false;
-  for (const key of mediaKeys) {
-    if (typeof parsed[key] === 'string') {
-      result.mediaType = key;
-      result.mediaUrl = parsed[key] as string;
-      foundMedia = true;
-      break;
+  // Album: media is an array
+  if (Array.isArray(parsed.media)) {
+    const items = parsed.media as Record<string, unknown>[];
+    const photos = items.filter(m => m.type === 'photo' && typeof m.media === 'string');
+    if (photos.length > 0) {
+      result.mediaType = 'album';
+      result.mediaUrls = photos.map(p => p.media as string);
+      result.mediaUrl = '';
+      const firstCaption = photos[0].caption;
+      if (typeof firstCaption === 'string') result.text = firstCaption;
+      const firstParse = photos[0].parse_mode;
+      if (typeof firstParse === 'string') result.parseMode = firstParse as 'MarkdownV2' | 'HTML';
     }
   }
-  if (!foundMedia) {
-    result.mediaType = 'none';
-    result.mediaUrl = '';
+
+  if (result.mediaType !== 'album') {
+    const mediaKeys = ['photo', 'video', 'document'] as const;
+    let foundMedia = false;
+    for (const key of mediaKeys) {
+      if (typeof parsed[key] === 'string') {
+        result.mediaType = key;
+        result.mediaUrl = parsed[key] as string;
+        result.mediaUrls = [];
+        foundMedia = true;
+        break;
+      }
+    }
+    if (!foundMedia) {
+      result.mediaType = 'none';
+      result.mediaUrl = '';
+      result.mediaUrls = [];
+    }
   }
 
   const replyMarkup = parsed.reply_markup as Record<string, unknown> | undefined;
