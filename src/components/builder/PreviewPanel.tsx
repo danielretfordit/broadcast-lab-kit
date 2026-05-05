@@ -120,7 +120,12 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
             </div>
 
             <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
-              {message.mediaType !== 'none' && message.mediaUrl && (
+              {isAlbum && albumUrls.length > 0 && (
+                <div className="rounded-t-xl overflow-hidden">
+                  <AlbumGrid urls={albumUrls} />
+                </div>
+              )}
+              {!isAlbum && message.mediaType !== 'none' && message.mediaUrl && (
                 <div className="rounded-t-xl overflow-hidden">
                   {message.mediaType === 'photo' ? (
                     <img
