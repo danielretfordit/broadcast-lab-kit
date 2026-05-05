@@ -18,7 +18,8 @@ export interface MessageData {
   platform: Platform;
   chatId: string;
   mediaUrl: string;
-  mediaType: 'photo' | 'video' | 'document' | 'none';
+  mediaUrls: string[];
+  mediaType: 'photo' | 'video' | 'document' | 'album' | 'none';
   text: string;
   subject: string;
   parseMode: 'MarkdownV2' | 'HTML';
@@ -34,6 +35,7 @@ export function createEmptyMessage(): MessageData {
     platform: 'telegram',
     chatId: '',
     mediaUrl: '',
+    mediaUrls: [],
     mediaType: 'none',
     text: '',
     subject: '',
@@ -46,6 +48,23 @@ export function buildTelegramJson(msg: MessageData): object {
   const processedText = msg.parseMode === 'MarkdownV2'
     ? prepareMarkdownV2(msg.text)
     : msg.text;
+
+  // Album: sendMediaGroup
+  if (msg.mediaType === 'album') {
+    const urls = (msg.mediaUrls || []).filter(u => u && u.trim());
+    const media = urls.map((url, idx) => {
+      const item: Record<string, unknown> = { type: 'photo', media: url };
+      if (idx === 0 && processedText) {
+        item.caption = processedText;
+        item.parse_mode = msg.parseMode;
+      }
+      return item;
+    });
+    return {
+      chat_id: msg.chatId || '<CHAT_ID>',
+      media,
+    };
+  }
 
   const inlineKeyboard = msg.buttonRows
     .filter(row => row.buttons.length > 0)
