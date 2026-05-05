@@ -1,114 +1,107 @@
+# План изменений
 
-# План доработок CRM Ads Конструктор
+## 1. Цитата `>` не должна экранироваться в MarkdownV2
 
-## 1. URL-параметры для режима и канала
+**Файл:** `src/lib/markdown.ts`
 
-Расширить роутинг `src/pages/Index.tsx` и `ViewOnlyPage.tsx` для чтения параметров:
+Сейчас `>` — обычный спецсимвол MarkdownV2 и экранируется как `\>` везде. Telegram же распознаёт `>` в начале строки как блок-цитату и экранирование ломает рендер.
 
-- `?mode=view` — режим просмотра (уже есть)
-- `?type=marketing|transactional` — фиксирует верхний режим (вкладки заблокированы, активна только переданная)
-- `?channel=telegram|max|html` — фиксирует канал (под-вкладки заблокированы, активен только переданный)
-- Если параметры не переданы — всё доступно (как сейчас)
+Логика: если `>` (опц. `> `) стоит в начале строки (после `\n` или в позиции 0), оставляем как есть; в середине строки — экранируем как раньше.
 
-В `ViewOnlyPage.tsx` тот же `?channel=` определяет, какое превью показывать (Telegram/MAX/HTML iframe).
+Реализация: в `escapeMarkdownV2Plain` (или отдельной пред-обработке `prepareMarkdownV2`) детектировать начало строки и пропускать ведущие `>` без обратного слеша. Все остальные правила MarkdownV2 не трогаем.
 
-`AppHeader.tsx`: для заблокированных вкладок добавить визуальное состояние `disabled` (opacity, cursor-not-allowed) и `pointer-events: none`.
+Также `>` для блок-цитаты должен быть только при `parseMode === 'MarkdownV2'` (для HTML — `<blockquote>`, уже работает).
 
-## 2. Сброс кэша / draft
+## 2. Валидация перед «Сохранить в проект»
 
-Текущая проблема: `MessageContext` всегда восстанавливает draft из `localStorage`, что мешает при смене URL и приводит к рассинхрону.
+**Файл:** `src/components/builder/PreviewPanel.tsx`
 
-Решение:
-- Добавить ключ кэша с учётом `channel` (например `omni-builder-draft:${channel}`), чтобы шаблоны разных каналов не перетирали друг друга.
-- В `Index.tsx` при наличии URL-параметров `type`/`channel` перезаписывать `message.platform` принудительно при монтировании.
-- Добавить кнопку «Сбросить» в `AppHeader` (иконка-trash рядом с режимами), которая очищает draft текущего канала и пересоздаёт пустое сообщение.
-- В `ViewOnlyPage` НЕ читать localStorage — всегда стартовать с пустого состояния и наполнять через будущий API (TODO уже есть).
+В `PreviewPanel` кнопка "Сохранить в проект" сейчас всегда активна. Добавить:
+- Если `mediaType !== 'none'` (включая новый `album`) и `mediaUrl` пуст / в альбоме нет ни одного валидного URL — кнопка `disabled`, тултип «Заполните ссылку на медиа».
+- Визуально: серый фон, `cursor-not-allowed`.
+- Дополнительно тот же чек уже подсвечивает поле в `EditorPanel` — оставляем как есть.
 
-## 3. Email-канал: переименование + поле «Тема»
+Также в `EditorPanel.tsx` для альбома проверка: хотя бы 2 непустых URL (Telegram требует 2–10).
 
-- В `AppHeader.tsx`: переименовать вкладку `HTML` → `Email` (id канала остаётся `html`, чтобы не ломать существующую логику; меняется только label и иконка → `Mail`).
-- В `MessageData` (`src/lib/message-builder.ts`) добавить поле `subject: string`.
-- В `EditorPanel.tsx` для `isHtml`: над HTML-редактором добавить поле «Тема письма» (input).
-- В `buildJson` для канала html сделать отдельную ветку (новая функция `buildEmailJson`):
-  ```
-  { subject, html, format: 'html' }
-  ```
-  Сейчас для html JSON-панель скрыта — оставить скрытой в UI, но JSON всё равно строить (для тестирования и будущего API).
-- `parseJsonToMessage`: добавить обработку email JSON.
+## 3. Альбом фото для Telegram и MAX
 
-## 4. Цитата (blockquote) для Telegram
+### Модель данных
 
-В `EditorPanel.tsx` в массив кнопок форматирования добавить кнопку `Quote` (иконка `Quote` из lucide):
-- MarkdownV2 (Telegram): обернуть выделенные строки префиксом `> ` на каждой строке (стандарт Telegram MarkdownV2 для expandable quote — `**>` опционально пропускаем, базовый `>` достаточно).
-- HTML parse_mode: `<blockquote>текст</blockquote>`.
-- MAX: тот же `> ` на каждой строке.
+**Файл:** `src/lib/message-builder.ts`
 
-В `PreviewPanel.tsx` `renderText` добавить рендер строк, начинающихся с `&gt; ` или `> `, в `<blockquote class="border-l-2 border-primary pl-2 text-muted-foreground">…</blockquote>`.
-
-## 5. Исправление AI для HTML — параметр `parse_mode`
-
-Сейчас `EditorPanel.handleAiHtml` шлёт корректный body (`prompt`, `currentHtml`), а edge function не использует `parse_mode`. Проблема: после генерации текст уходит в `message.text`, а `message.parseMode` остаётся прежним (`MarkdownV2`), что путает превью/JSON.
-
-Исправление:
-- В `handleAiHtml` после `updateField('text', data.html)` дополнительно `updateField('parseMode', 'HTML')`.
-- При переключении канала на `html` автоматически выставлять `parseMode = 'HTML'` в `setPlatform` (`MessageContext.tsx`).
-
-## 6. Валидация медиа
-
-В `EditorPanel.tsx` (или `buildJson`/превью) показывать ошибку, когда выбран `mediaType !== 'none'`, но `mediaUrl` пуст:
-- Под полем URL красная подсказка «Укажите ссылку на {фото|видео|файл}».
-- Кнопка «Сохранить в проект» / «Тестировать» становится неактивной.
-- В `JsonPanel` показывать предупреждение и не блокировать копирование, но подсветить.
-
-## 7. Настройки бота (модальное окно) + кнопка «Тестировать»
-
-Под `JsonPanel` добавить компактную панель с двумя «незаметными» иконками-кнопками (внизу, тонкая полоса):
-
-```text
-[⚙ Настройки]                                    [▶ Тестировать]
+```ts
+mediaType: 'photo' | 'video' | 'document' | 'album' | 'none';
+mediaUrls: string[]; // новый — для album
 ```
 
-### Модалка настроек (`BotSettingsDialog.tsx`)
-- Поле «Bot Token» (Telegram): input type=password.
-- Заглушка для MAX (поле «Access Token», disabled с пометкой «скоро»).
-- Хранение: только `sessionStorage` (ключ `bot-settings:telegram`), очищается при закрытии вкладки. Никогда не пишем в localStorage и не отправляем на сервер.
-- Кнопки «Сохранить» / «Очистить».
+`mediaUrl` остаётся для одиночного медиа (обратная совместимость с существующими черновиками localStorage). При выборе `album` UI работает с `mediaUrls`.
 
-### Кнопка «Тестировать»
-- Доступна только для `telegram` (для `max` — disabled с tooltip «скоро»).
-- Проверяет: токен задан, JSON валиден, `chatId` задан, при наличии media — `mediaUrl` не пуст.
-- Определяет метод по JSON: `sendMessage` / `sendPhoto` / `sendVideo` / `sendDocument`.
-- POST напрямую на `https://api.telegram.org/bot{TOKEN}/{method}` с телом из JSON-панели (текущий `jsonText` если в edit-режиме, иначе сгенерированный).
-- Показывает toast: success с `message_id`, либо error с `description` от Telegram.
-- Никаких edge-функций — токен не уходит из браузера.
+### Editor
+
+**Файл:** `src/components/builder/EditorPanel.tsx`
+
+- Добавить новую кнопку выбора типа: `Альбом` (icon: `Images` из lucide).
+- Когда `mediaType === 'album'`: вместо одного input — список `mediaUrls` с кнопками «+ Добавить фото» / «×» (мин. 2, макс. 10). Каждое поле — URL картинки.
+- Caption (текст сообщения) применяется только к первому фото — подсказать пользователю надписью под полем.
+- Скрыть выбор parse_mode только когда не альбом? Нет — оставляем (caption поддерживает MarkdownV2).
+- Альбом доступен только для `telegram` и `max`. При платформе `html` пункт скрыт (он и так уже скрыт целиком).
+
+### JSON-генерация
+
+**Файл:** `src/lib/message-builder.ts`
+
+Telegram (`buildTelegramJson`) — если `mediaType === 'album'` и есть ≥2 URL:
+```json
+{
+  "chat_id": "...",
+  "media": [
+    { "type": "photo", "media": "<url1>", "caption": "<processed text>", "parse_mode": "MarkdownV2" },
+    { "type": "photo", "media": "<url2>" },
+    ...
+  ]
+}
+```
+Метод: `getTelegramMethod` возвращает `sendMediaGroup` для альбома.
+
+MAX (`buildMaxJson`) — если `mediaType === 'album'`:
+```json
+{
+  "text": "<text>",
+  "attachments": [
+    { "type": "image", "payload": { "url": "<url1>" } },
+    ...
+  ]
+}
+```
+
+### Парсинг входящего JSON (вставка)
+
+`parseTelegramJson`: если есть массив `media` с типом `photo` — `mediaType = 'album'`, `mediaUrls = media.map(m => m.media)`, `text = media[0].caption || ''`.
+
+`parseMaxJson`: если в `attachments` несколько `type: image` — `mediaType = 'album'`, `mediaUrls = attachments.filter(...).map(a => a.payload.url)`.
+
+### Превью
+
+**Файл:** `src/components/builder/PreviewPanel.tsx`
+
+При `mediaType === 'album' && mediaUrls.length > 0`:
+- Сетка 2×N (как в Telegram): первое фото большое сверху, остальные плиткой 2 в ряд (для 2 фото — две колонки, для 3 — 1 большое + 2 справа, для 4+ — простая сетка `grid-cols-2`).
+- Под альбомом — текст (caption) как обычно.
+- Кнопки и метод API в нижней плашке: показывать `sendMediaGroup` (Telegram).
+
+Тот же рендер применяется в `ViewOnlyPage` (использует `PreviewPanel`).
+
+## Файлы
+
+- `src/lib/markdown.ts` — не экранировать ведущий `>`.
+- `src/lib/message-builder.ts` — тип `MessageData`, `createEmptyMessage`, `buildTelegramJson`, `buildMaxJson`, `parseTelegramJson`, `parseMaxJson`, `getTelegramMethod`.
+- `src/components/builder/EditorPanel.tsx` — UI для альбома, валидация.
+- `src/components/builder/PreviewPanel.tsx` — рендер альбома, disabled-состояние «Сохранить в проект».
+- `src/contexts/MessageContext.tsx` — авто-миграция старых черновиков (добавить `mediaUrls: []`, если отсутствует).
 
 ## Технические детали
 
-### Файлы для изменения
-- `src/lib/message-builder.ts` — добавить `subject`, `buildEmailJson`, `parseEmailJson`, обновить типы.
-- `src/contexts/MessageContext.tsx` — кэш по каналу, авто-`parseMode=HTML` для html, метод `resetDraft()`.
-- `src/pages/Index.tsx` — чтение `type`/`channel` из URL, передача `lockedMode`/`lockedChannel` в header, форс-применение к `message.platform`.
-- `src/components/builder/AppHeader.tsx` — `lockedMode`/`lockedChannel` пропсы, переименование HTML → Email, иконка сброса.
-- `src/components/builder/EditorPanel.tsx` — поле «Тема», кнопка blockquote, валидация media-URL, `parseMode=HTML` после AI HTML.
-- `src/components/builder/PreviewPanel.tsx` — рендер blockquote, отображение `subject` для email.
-- `src/components/builder/JsonPanel.tsx` — нижняя полоса с двумя иконками (Settings, Play).
-- `src/components/builder/BotSettingsDialog.tsx` — НОВЫЙ, на shadcn `Dialog`, sessionStorage.
-- `src/components/builder/ViewOnlyPage.tsx` — учёт `?channel=`, не читать localStorage.
-
-### Структура URL (итог)
-```
-/                                                         — всё доступно
-/?type=marketing                                          — заблокировано marketing
-/?type=marketing&channel=telegram                         — заблокировано всё, только telegram
-/?mode=view&channel=html&guid=…                           — просмотр email-шаблона
-```
-
-### Безопасность
-- Bot token только в `sessionStorage` (живёт до закрытия вкладки).
-- Никаких сетевых отправок токена кроме прямого вызова `api.telegram.org`.
-- Предупреждение в модалке: «Токен хранится только в этой вкладке браузера и очищается при закрытии».
-
-### Не входит в этот этап
-- Реальная загрузка шаблона в `ViewOnlyPage` по GUID (остаётся TODO).
-- Полноценный токен MAX для теста (заглушка disabled).
-- Сохранение настроек на бэкенде.
+- `mediaUrls` в state всегда массив; при переключении типа медиа очищаем оба поля (`mediaUrl=''`, `mediaUrls=[]`).
+- Caption в Telegram альбоме идёт только в первом элементе массива `media` вместе с `parse_mode`.
+- `sendMediaGroup` не поддерживает `reply_markup` (inline кнопки) — выводим предупреждение в UI, если у альбома указаны кнопки, и не включаем их в JSON.
+- Тестовая отправка (`JsonPanel`) для альбома работает без изменений: метод берётся из `getTelegramMethod`.
