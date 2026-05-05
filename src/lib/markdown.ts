@@ -197,7 +197,9 @@ export function prepareMarkdownV2(rawText: string): string {
       plainEnd += 1;
     }
 
-    result += escapeMarkdownV2Plain(rawText.slice(index, plainEnd));
+    const slice = rawText.slice(index, plainEnd);
+    const atLineStart = index === 0 || rawText[index - 1] === '\n';
+    result += escapeMarkdownV2Plain(slice, atLineStart);
     index = plainEnd;
   }
 
