@@ -101,15 +101,22 @@ export function buildTelegramJson(msg: MessageData): object {
 export function buildMaxJson(msg: MessageData): object {
   const attachments: Record<string, unknown>[] = [];
 
-  if (msg.mediaType !== 'none' && msg.mediaUrl) {
+  if (msg.mediaType === 'album') {
+    const urls = (msg.mediaUrls || []).filter(u => u && u.trim());
+    for (const url of urls) {
+      attachments.push({ type: 'image', payload: { url } });
+    }
+  } else if (msg.mediaType !== 'none' && msg.mediaUrl) {
     const typeMap = { photo: 'image', video: 'video', document: 'file' } as const;
     attachments.push({
-      type: typeMap[msg.mediaType],
+      type: typeMap[msg.mediaType as 'photo' | 'video' | 'document'],
       payload: { url: msg.mediaUrl },
     });
   }
 
-  const inlineButtons = msg.buttonRows
+  // Album in Telegram can't have buttons; mirror that behavior for MAX collections
+  const skipButtons = msg.mediaType === 'album';
+  const inlineButtons = skipButtons ? [] : msg.buttonRows
     .filter(row => row.buttons.length > 0)
     .map(row =>
       row.buttons.map(btn => {
@@ -123,6 +130,14 @@ export function buildMaxJson(msg: MessageData): object {
       type: 'inline_keyboard',
       payload: { buttons: inlineButtons },
     });
+  }
+
+  // Album JSON shape: { text, attachments } without "format"
+  if (msg.mediaType === 'album') {
+    return {
+      text: msg.text || '',
+      ...(attachments.length > 0 ? { attachments } : {}),
+    };
   }
 
   return {
@@ -148,6 +163,7 @@ export function buildJson(msg: MessageData): object {
 
 /** Determine Telegram API method from message */
 export function getTelegramMethod(msg: MessageData): string {
+  if (msg.mediaType === 'album') return 'sendMediaGroup';
   if (msg.mediaType !== 'none' && msg.mediaUrl) {
     return `send${msg.mediaType.charAt(0).toUpperCase()}${msg.mediaType.slice(1)}`;
   }
