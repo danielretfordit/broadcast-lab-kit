@@ -18,7 +18,8 @@ export interface MessageData {
   platform: Platform;
   chatId: string;
   mediaUrl: string;
-  mediaType: 'photo' | 'video' | 'document' | 'none';
+  mediaUrls: string[];
+  mediaType: 'photo' | 'video' | 'document' | 'album' | 'none';
   text: string;
   subject: string;
   parseMode: 'MarkdownV2' | 'HTML';
@@ -34,6 +35,7 @@ export function createEmptyMessage(): MessageData {
     platform: 'telegram',
     chatId: '',
     mediaUrl: '',
+    mediaUrls: [],
     mediaType: 'none',
     text: '',
     subject: '',
@@ -46,6 +48,23 @@ export function buildTelegramJson(msg: MessageData): object {
   const processedText = msg.parseMode === 'MarkdownV2'
     ? prepareMarkdownV2(msg.text)
     : msg.text;
+
+  // Album: sendMediaGroup
+  if (msg.mediaType === 'album') {
+    const urls = (msg.mediaUrls || []).filter(u => u && u.trim());
+    const media = urls.map((url, idx) => {
+      const item: Record<string, unknown> = { type: 'photo', media: url };
+      if (idx === 0 && processedText) {
+        item.caption = processedText;
+        item.parse_mode = msg.parseMode;
+      }
+      return item;
+    });
+    return {
+      chat_id: msg.chatId || '<CHAT_ID>',
+      media,
+    };
+  }
 
   const inlineKeyboard = msg.buttonRows
     .filter(row => row.buttons.length > 0)
@@ -82,15 +101,22 @@ export function buildTelegramJson(msg: MessageData): object {
 export function buildMaxJson(msg: MessageData): object {
   const attachments: Record<string, unknown>[] = [];
 
-  if (msg.mediaType !== 'none' && msg.mediaUrl) {
+  if (msg.mediaType === 'album') {
+    const urls = (msg.mediaUrls || []).filter(u => u && u.trim());
+    for (const url of urls) {
+      attachments.push({ type: 'image', payload: { url } });
+    }
+  } else if (msg.mediaType !== 'none' && msg.mediaUrl) {
     const typeMap = { photo: 'image', video: 'video', document: 'file' } as const;
     attachments.push({
-      type: typeMap[msg.mediaType],
+      type: typeMap[msg.mediaType as 'photo' | 'video' | 'document'],
       payload: { url: msg.mediaUrl },
     });
   }
 
-  const inlineButtons = msg.buttonRows
+  // Album in Telegram can't have buttons; mirror that behavior for MAX collections
+  const skipButtons = msg.mediaType === 'album';
+  const inlineButtons = skipButtons ? [] : msg.buttonRows
     .filter(row => row.buttons.length > 0)
     .map(row =>
       row.buttons.map(btn => {
@@ -104,6 +130,14 @@ export function buildMaxJson(msg: MessageData): object {
       type: 'inline_keyboard',
       payload: { buttons: inlineButtons },
     });
+  }
+
+  // Album JSON shape: { text, attachments } without "format"
+  if (msg.mediaType === 'album') {
+    return {
+      text: msg.text || '',
+      ...(attachments.length > 0 ? { attachments } : {}),
+    };
   }
 
   return {
@@ -129,6 +163,7 @@ export function buildJson(msg: MessageData): object {
 
 /** Determine Telegram API method from message */
 export function getTelegramMethod(msg: MessageData): string {
+  if (msg.mediaType === 'album') return 'sendMediaGroup';
   if (msg.mediaType !== 'none' && msg.mediaUrl) {
     return `send${msg.mediaType.charAt(0).toUpperCase()}${msg.mediaType.slice(1)}`;
   }
@@ -146,19 +181,38 @@ export function parseTelegramJson(parsed: Record<string, unknown>): Partial<Mess
     result.parseMode = parsed.parse_mode as 'MarkdownV2' | 'HTML';
   }
 
-  const mediaKeys = ['photo', 'video', 'document'] as const;
-  let foundMedia = false;
-  for (const key of mediaKeys) {
-    if (typeof parsed[key] === 'string') {
-      result.mediaType = key;
-      result.mediaUrl = parsed[key] as string;
-      foundMedia = true;
-      break;
+  // Album: media is an array
+  if (Array.isArray(parsed.media)) {
+    const items = parsed.media as Record<string, unknown>[];
+    const photos = items.filter(m => m.type === 'photo' && typeof m.media === 'string');
+    if (photos.length > 0) {
+      result.mediaType = 'album';
+      result.mediaUrls = photos.map(p => p.media as string);
+      result.mediaUrl = '';
+      const firstCaption = photos[0].caption;
+      if (typeof firstCaption === 'string') result.text = firstCaption;
+      const firstParse = photos[0].parse_mode;
+      if (typeof firstParse === 'string') result.parseMode = firstParse as 'MarkdownV2' | 'HTML';
     }
   }
-  if (!foundMedia) {
-    result.mediaType = 'none';
-    result.mediaUrl = '';
+
+  if (result.mediaType !== 'album') {
+    const mediaKeys = ['photo', 'video', 'document'] as const;
+    let foundMedia = false;
+    for (const key of mediaKeys) {
+      if (typeof parsed[key] === 'string') {
+        result.mediaType = key;
+        result.mediaUrl = parsed[key] as string;
+        result.mediaUrls = [];
+        foundMedia = true;
+        break;
+      }
+    }
+    if (!foundMedia) {
+      result.mediaType = 'none';
+      result.mediaUrl = '';
+      result.mediaUrls = [];
+    }
   }
 
   const replyMarkup = parsed.reply_markup as Record<string, unknown> | undefined;
@@ -188,11 +242,22 @@ export function parseMaxJson(parsed: Record<string, unknown>): Partial<MessageDa
 
   result.mediaType = 'none';
   result.mediaUrl = '';
+  result.mediaUrls = [];
   result.buttonRows = [];
 
   if (Array.isArray(parsed.attachments)) {
-    for (const att of parsed.attachments as Record<string, unknown>[]) {
-      if (att.type === 'image' || att.type === 'video' || att.type === 'file') {
+    const attachments = parsed.attachments as Record<string, unknown>[];
+    const imageAtts = attachments.filter(a => a.type === 'image');
+
+    if (imageAtts.length >= 2) {
+      result.mediaType = 'album';
+      result.mediaUrls = imageAtts
+        .map(a => (a.payload as Record<string, string> | undefined)?.url || '')
+        .filter(Boolean);
+    }
+
+    for (const att of attachments) {
+      if (result.mediaType !== 'album' && (att.type === 'image' || att.type === 'video' || att.type === 'file')) {
         const typeMap: Record<string, 'photo' | 'video' | 'document'> = {
           image: 'photo', video: 'video', file: 'document',
         };
@@ -227,6 +292,7 @@ export function parseEmailJson(parsed: Record<string, unknown>): Partial<Message
     parseMode: 'HTML',
     mediaType: 'none',
     mediaUrl: '',
+    mediaUrls: [],
     buttonRows: [],
   };
 }

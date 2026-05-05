@@ -12,6 +12,14 @@ interface PreviewPanelProps {
 export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const { message } = useMessage();
 
+  const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
+  const isAlbum = message.mediaType === 'album';
+  const mediaInvalid =
+    message.platform !== 'html' &&
+    ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
+      (isAlbum && albumUrls.length < 2));
+  const saveDisabled = mediaInvalid;
+
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
 
@@ -112,7 +120,12 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
             </div>
 
             <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
-              {message.mediaType !== 'none' && message.mediaUrl && (
+              {isAlbum && albumUrls.length > 0 && (
+                <div className="rounded-t-xl overflow-hidden">
+                  <AlbumGrid urls={albumUrls} />
+                </div>
+              )}
+              {!isAlbum && message.mediaType !== 'none' && message.mediaUrl && (
                 <div className="rounded-t-xl overflow-hidden">
                   {message.mediaType === 'photo' ? (
                     <img
@@ -166,7 +179,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             </div>
 
-            {message.buttonRows.length > 0 && (
+            {!isAlbum && message.buttonRows.length > 0 && (
               <div className="mt-2 space-y-1.5 max-w-xl">
                 {message.buttonRows.map(row => (
                   <div key={row.id} className="flex gap-1.5">
@@ -205,13 +218,21 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             )}
 
+            {isAlbum && message.buttonRows.length > 0 && (
+              <div className="mt-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30 text-[11px] text-warning max-w-xl">
+                ⚠ Inline-кнопки не отправляются вместе с альбомом фото
+              </div>
+            )}
+
             {!viewOnly && (
               <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
                 <span className="font-semibold">API Method: </span>
                 {message.platform === 'telegram'
-                  ? message.mediaType !== 'none' && message.mediaUrl
-                    ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
-                    : 'sendMessage'
+                  ? isAlbum
+                    ? 'sendMediaGroup'
+                    : message.mediaType !== 'none' && message.mediaUrl
+                      ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
+                      : 'sendMessage'
                   : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
@@ -227,13 +248,49 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           <button
             type="button"
             onClick={handleSaveToProject}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            disabled={saveDisabled}
+            title={saveDisabled ? 'Заполните все ссылки на медиа перед сохранением' : ''}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
           >
             <Save size={15} />
-            Сохранить в проект
+            {saveDisabled ? 'Заполните медиа для сохранения' : 'Сохранить в проект'}
           </button>
         </div>
       )}
     </div>
   );
 }
+
+function AlbumGrid({ urls }: { urls: string[] }) {
+  const count = urls.length;
+  if (count === 1) {
+    return <img src={urls[0]} alt="" className="w-full max-h-60 object-cover bg-muted" />;
+  }
+  if (count === 2) {
+    return (
+      <div className="grid grid-cols-2 gap-0.5 bg-muted">
+        {urls.map((u, i) => (
+          <img key={i} src={u} alt="" className="w-full h-32 object-cover bg-muted" />
+        ))}
+      </div>
+    );
+  }
+  if (count === 3) {
+    return (
+      <div className="grid grid-cols-2 gap-0.5 bg-muted">
+        <img src={urls[0]} alt="" className="row-span-2 w-full h-full max-h-64 object-cover bg-muted" />
+        <img src={urls[1]} alt="" className="w-full h-32 object-cover bg-muted" />
+        <img src={urls[2]} alt="" className="w-full h-32 object-cover bg-muted" />
+      </div>
+    );
+  }
+  // 4+ — simple grid
+  return (
+    <div className="grid grid-cols-2 gap-0.5 bg-muted">
+      {urls.slice(0, 10).map((u, i) => (
+        <img key={i} src={u} alt="" className="w-full h-28 object-cover bg-muted" />
+      ))}
+    </div>
+  );
+}
+
