@@ -293,23 +293,4 @@ function AlbumGrid({ urls }: { urls: string[] }) {
     </div>
   );
 }
-          </>
-        )}
-      </div>
 
-      {/* Save button footer */}
-      {!viewOnly && (
-        <div className="px-4 py-3 border-t border-border">
-          <button
-            type="button"
-            onClick={handleSaveToProject}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
-          >
-            <Save size={15} />
-            Сохранить в проект
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
