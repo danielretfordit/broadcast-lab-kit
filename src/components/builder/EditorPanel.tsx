@@ -193,7 +193,11 @@ export default function EditorPanel() {
                 key={mt.id}
                 type="button"
                 onClick={() => {
-                  if (mt.id !== message.mediaType) updateField('mediaUrl', '');
+                  if (mt.id !== message.mediaType) {
+                    updateField('mediaUrl', '');
+                    // Init album with two empty slots
+                    updateField('mediaUrls', mt.id === 'album' ? ['', ''] : []);
+                  }
                   updateField('mediaType', mt.id);
                 }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
@@ -207,7 +211,7 @@ export default function EditorPanel() {
               </button>
             ))}
           </div>
-          {message.mediaType !== 'none' && (
+          {message.mediaType !== 'none' && message.mediaType !== 'album' && (
             <>
               <input
                 type="text"
@@ -227,6 +231,55 @@ export default function EditorPanel() {
                 </p>
               )}
             </>
+          )}
+          {isAlbum && (
+            <div className="space-y-2">
+              {albumUrls.map((url, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-mono w-5 text-right">{idx + 1}.</span>
+                  <input
+                    type="text"
+                    value={url}
+                    onChange={e => updateAlbumUrl(idx, e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
+                      !url.trim()
+                        ? 'border-destructive/40 focus:ring-destructive/20 focus:border-destructive/60'
+                        : 'border-border focus:ring-primary/20 focus:border-primary/40'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeAlbumPhoto(idx)}
+                    disabled={albumUrls.length <= 2}
+                    className="text-muted-foreground hover:text-destructive disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title={albumUrls.length <= 2 ? 'Минимум 2 фото' : 'Удалить'}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={addAlbumPhoto}
+                  disabled={albumUrls.length >= 10}
+                  className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Plus size={12} /> Добавить фото
+                </button>
+                <span className="text-[10px] text-muted-foreground">{albumValidCount}/10 (мин. 2)</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground italic">
+                Caption (текст) применяется только к первому фото. Inline-кнопки альбомом не поддерживаются.
+              </p>
+              {albumMissing && (
+                <p className="text-[11px] text-destructive flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Укажите как минимум 2 ссылки на фото
+                </p>
+              )}
+            </div>
           )}
         </section>
       )}
