@@ -110,8 +110,9 @@ function parseFormatted(text: string, startIndex: number): { value: string; next
   };
 }
 
-export function escapeMarkdownV2Plain(text: string): string {
+export function escapeMarkdownV2Plain(text: string, atLineStart = true): string {
   let result = '';
+  let lineStart = atLineStart;
 
   for (let index = 0; index < text.length; index += 1) {
     const char = text[index];
@@ -123,11 +124,26 @@ export function escapeMarkdownV2Plain(text: string): string {
         result += text[index + 1];
         index += 1;
       }
+      lineStart = false;
+      continue;
+    }
 
+    if (char === '\n') {
+      result += char;
+      lineStart = true;
+      continue;
+    }
+
+    // Don't escape blockquote markers ">" at the start of a line.
+    // Telegram interprets a leading ">" as a blockquote line; escaping it breaks the quote.
+    if (char === '>' && lineStart) {
+      result += char;
+      // Stay at lineStart so "> > nested" also works
       continue;
     }
 
     result += MARKDOWN_V2_SPECIAL_CHARS.has(char) ? `\\${char}` : char;
+    lineStart = false;
   }
 
   return result;
