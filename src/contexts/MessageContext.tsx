@@ -12,7 +12,10 @@ function loadDraft(platform: Platform): MessageData {
     const raw = localStorage.getItem(storageKey(platform));
     if (raw) {
       const parsed = JSON.parse(raw);
-      return { ...createEmptyMessage(), ...parsed, platform };
+      // Migration: ensure mediaUrls exists
+      const merged = { ...createEmptyMessage(), ...parsed, platform };
+      if (!Array.isArray(merged.mediaUrls)) merged.mediaUrls = [];
+      return merged;
     }
   } catch {}
   const empty = createEmptyMessage();
