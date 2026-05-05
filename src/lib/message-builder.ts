@@ -242,11 +242,22 @@ export function parseMaxJson(parsed: Record<string, unknown>): Partial<MessageDa
 
   result.mediaType = 'none';
   result.mediaUrl = '';
+  result.mediaUrls = [];
   result.buttonRows = [];
 
   if (Array.isArray(parsed.attachments)) {
-    for (const att of parsed.attachments as Record<string, unknown>[]) {
-      if (att.type === 'image' || att.type === 'video' || att.type === 'file') {
+    const attachments = parsed.attachments as Record<string, unknown>[];
+    const imageAtts = attachments.filter(a => a.type === 'image');
+
+    if (imageAtts.length >= 2) {
+      result.mediaType = 'album';
+      result.mediaUrls = imageAtts
+        .map(a => (a.payload as Record<string, string> | undefined)?.url || '')
+        .filter(Boolean);
+    }
+
+    for (const att of attachments) {
+      if (result.mediaType !== 'album' && (att.type === 'image' || att.type === 'video' || att.type === 'file')) {
         const typeMap: Record<string, 'photo' | 'video' | 'document'> = {
           image: 'photo', video: 'video', file: 'document',
         };
@@ -281,6 +292,7 @@ export function parseEmailJson(parsed: Record<string, unknown>): Partial<Message
     parseMode: 'HTML',
     mediaType: 'none',
     mediaUrl: '',
+    mediaUrls: [],
     buttonRows: [],
   };
 }
