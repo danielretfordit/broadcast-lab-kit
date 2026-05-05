@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HtmlCodeEditor from './HtmlCodeEditor';
@@ -13,7 +13,11 @@ export default function EditorPanel() {
   const [showAi, setShowAi] = useState(false);
 
   const isHtml = message.platform === 'html';
-  const mediaUrlMissing = !isHtml && message.mediaType !== 'none' && !message.mediaUrl.trim();
+  const isAlbum = message.mediaType === 'album';
+  const albumUrls = message.mediaUrls || [];
+  const albumValidCount = albumUrls.filter(u => u.trim()).length;
+  const mediaUrlMissing = !isHtml && !isAlbum && message.mediaType !== 'none' && !message.mediaUrl.trim();
+  const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
 
   const insertFormatting = (tag: string) => {
     const textarea = document.getElementById('msg-body') as HTMLTextAreaElement | null;
@@ -96,7 +100,21 @@ export default function EditorPanel() {
     { id: 'photo' as const, icon: Image, label: 'Фото' },
     { id: 'video' as const, icon: Video, label: 'Видео' },
     { id: 'document' as const, icon: FileText, label: 'Файл' },
+    { id: 'album' as const, icon: Images, label: 'Альбом' },
   ];
+
+  const updateAlbumUrl = (idx: number, value: string) => {
+    const next = [...albumUrls];
+    next[idx] = value;
+    updateField('mediaUrls', next);
+  };
+  const addAlbumPhoto = () => {
+    if (albumUrls.length >= 10) return;
+    updateField('mediaUrls', [...albumUrls, '']);
+  };
+  const removeAlbumPhoto = (idx: number) => {
+    updateField('mediaUrls', albumUrls.filter((_, i) => i !== idx));
+  };
 
   const mediaPlaceholders: Record<string, string> = {
     photo: 'https://example.com/image.jpg',
