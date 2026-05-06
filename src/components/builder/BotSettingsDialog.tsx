@@ -74,15 +74,14 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
               type="password"
               value={token}
               onChange={e => setToken(e.target.value)}
-              disabled={isMax}
-              placeholder={isMax ? 'Скоро будет доступно' : '123456:AAH...'}
+              placeholder={isMax ? 'f9LHodD0cOIR5XiHPjx5...' : '123456:AAH...'}
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50"
             />
-            {!isMax && (
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                Получите токен у @BotFather в Telegram
-              </p>
-            )}
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {isMax
+                ? 'Укажите Access Token, выданный платформой MAX'
+                : 'Получите токен у @BotFather в Telegram'}
+            </p>
           </div>
         </div>
 
@@ -90,16 +89,14 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
           <button
             type="button"
             onClick={clear}
-            disabled={isMax}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-xs font-medium hover:bg-secondary transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-muted text-muted-foreground text-xs font-medium hover:bg-secondary transition-colors"
           >
             <Trash2 size={12} /> Очистить
           </button>
           <button
             type="button"
             onClick={save}
-            disabled={isMax}
-            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
           >
             Сохранить
           </button>

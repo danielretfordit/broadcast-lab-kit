@@ -1,107 +1,86 @@
-# План изменений
+## Plan: 3 fixes for the JSON test flow + header
 
-## 1. Цитата `>` не должна экранироваться в MarkdownV2
+### 1) Fix "Укажите ссылку на медиа (album)" error in test send
 
-**Файл:** `src/lib/markdown.ts`
+**File:** `src/components/builder/JsonPanel.tsx` (`handleTest`)
 
-Сейчас `>` — обычный спецсимвол MarkdownV2 и экранируется как `\>` везде. Telegram же распознаёт `>` в начале строки как блок-цитату и экранирование ломает рендер.
-
-Логика: если `>` (опц. `> `) стоит в начале строки (после `\n` или в позиции 0), оставляем как есть; в середине строки — экранируем как раньше.
-
-Реализация: в `escapeMarkdownV2Plain` (или отдельной пред-обработке `prepareMarkdownV2`) детектировать начало строки и пропускать ведущие `>` без обратного слеша. Все остальные правила MarkdownV2 не трогаем.
-
-Также `>` для блок-цитаты должен быть только при `parseMode === 'MarkdownV2'` (для HTML — `<blockquote>`, уже работает).
-
-## 2. Валидация перед «Сохранить в проект»
-
-**Файл:** `src/components/builder/PreviewPanel.tsx`
-
-В `PreviewPanel` кнопка "Сохранить в проект" сейчас всегда активна. Добавить:
-- Если `mediaType !== 'none'` (включая новый `album`) и `mediaUrl` пуст / в альбоме нет ни одного валидного URL — кнопка `disabled`, тултип «Заполните ссылку на медиа».
-- Визуально: серый фон, `cursor-not-allowed`.
-- Дополнительно тот же чек уже подсвечивает поле в `EditorPanel` — оставляем как есть.
-
-Также в `EditorPanel.tsx` для альбома проверка: хотя бы 2 непустых URL (Telegram требует 2–10).
-
-## 3. Альбом фото для Telegram и MAX
-
-### Модель данных
-
-**Файл:** `src/lib/message-builder.ts`
+Current validation only checks `message.mediaUrl`, which is empty for albums. Replace the guard:
 
 ```ts
-mediaType: 'photo' | 'video' | 'document' | 'album' | 'none';
-mediaUrls: string[]; // новый — для album
-```
-
-`mediaUrl` остаётся для одиночного медиа (обратная совместимость с существующими черновиками localStorage). При выборе `album` UI работает с `mediaUrls`.
-
-### Editor
-
-**Файл:** `src/components/builder/EditorPanel.tsx`
-
-- Добавить новую кнопку выбора типа: `Альбом` (icon: `Images` из lucide).
-- Когда `mediaType === 'album'`: вместо одного input — список `mediaUrls` с кнопками «+ Добавить фото» / «×» (мин. 2, макс. 10). Каждое поле — URL картинки.
-- Caption (текст сообщения) применяется только к первому фото — подсказать пользователю надписью под полем.
-- Скрыть выбор parse_mode только когда не альбом? Нет — оставляем (caption поддерживает MarkdownV2).
-- Альбом доступен только для `telegram` и `max`. При платформе `html` пункт скрыт (он и так уже скрыт целиком).
-
-### JSON-генерация
-
-**Файл:** `src/lib/message-builder.ts`
-
-Telegram (`buildTelegramJson`) — если `mediaType === 'album'` и есть ≥2 URL:
-```json
-{
-  "chat_id": "...",
-  "media": [
-    { "type": "photo", "media": "<url1>", "caption": "<processed text>", "parse_mode": "MarkdownV2" },
-    { "type": "photo", "media": "<url2>" },
-    ...
-  ]
-}
-```
-Метод: `getTelegramMethod` возвращает `sendMediaGroup` для альбома.
-
-MAX (`buildMaxJson`) — если `mediaType === 'album'`:
-```json
-{
-  "text": "<text>",
-  "attachments": [
-    { "type": "image", "payload": { "url": "<url1>" } },
-    ...
-  ]
+if (message.mediaType === 'album') {
+  const urls = (message.mediaUrls || []).filter(u => u.trim());
+  if (urls.length < 2) {
+    toast.error('Для альбома нужно минимум 2 фото');
+    return;
+  }
+} else if (message.mediaType !== 'none' && !message.mediaUrl.trim()) {
+  toast.error(`Укажите ссылку на медиа (${message.mediaType})`);
+  return;
 }
 ```
 
-### Парсинг входящего JSON (вставка)
+### 2) Click on logo / tool name reloads page with cache reset
 
-`parseTelegramJson`: если есть массив `media` с типом `photo` — `mediaType = 'album'`, `mediaUrls = media.map(m => m.media)`, `text = media[0].caption || ''`.
+**File:** `src/components/builder/AppHeader.tsx`
 
-`parseMaxJson`: если в `attachments` несколько `type: image` — `mediaType = 'album'`, `mediaUrls = attachments.filter(...).map(a => a.payload.url)`.
+Wrap the left brand block (logo square + "CRM Ads" / "Конструктор рассылок") in a clickable button:
 
-### Превью
+```ts
+const handleHardReset = () => {
+  try {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('omni-builder-draft'))
+      .forEach(k => localStorage.removeItem(k));
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith('bot-settings:'))
+      .forEach(k => sessionStorage.removeItem(k));
+  } catch {}
+  window.location.reload(); // preserve URL (?type/?channel locks)
+};
+```
 
-**Файл:** `src/components/builder/PreviewPanel.tsx`
+Add `cursor-pointer`, hover opacity, tooltip "Сбросить кэш и перезагрузить".
 
-При `mediaType === 'album' && mediaUrls.length > 0`:
-- Сетка 2×N (как в Telegram): первое фото большое сверху, остальные плиткой 2 в ряд (для 2 фото — две колонки, для 3 — 1 большое + 2 справа, для 4+ — простая сетка `grid-cols-2`).
-- Под альбомом — текст (caption) как обычно.
-- Кнопки и метод API в нижней плашке: показывать `sendMediaGroup` (Telegram).
+### 3) MAX test sending
 
-Тот же рендер применяется в `ViewOnlyPage` (использует `PreviewPanel`).
+`user_id` для MAX берётся из поля **Chat ID редактора** (`message.chatId`).
 
-## Файлы
+**a) `src/components/builder/BotSettingsDialog.tsx`** — enable MAX input:
+- Remove all `disabled={isMax}`.
+- Label MAX: `Access Token`, placeholder `f9LHodD0cOIR5XiHPjx5...`.
+- Helper text MAX: "Укажите Access Token, выданный платформой MAX".
 
-- `src/lib/markdown.ts` — не экранировать ведущий `>`.
-- `src/lib/message-builder.ts` — тип `MessageData`, `createEmptyMessage`, `buildTelegramJson`, `buildMaxJson`, `parseTelegramJson`, `parseMaxJson`, `getTelegramMethod`.
-- `src/components/builder/EditorPanel.tsx` — UI для альбома, валидация.
-- `src/components/builder/PreviewPanel.tsx` — рендер альбома, disabled-состояние «Сохранить в проект».
-- `src/contexts/MessageContext.tsx` — авто-миграция старых черновиков (добавить `mediaUrls: []`, если отсутствует).
+**b) `src/components/builder/JsonPanel.tsx`** — implement MAX branch in `handleTest`:
 
-## Технические детали
+Remove the early `if (!isTelegram)` block and the `disabled={isMax}` on the Тестировать button. Then:
 
-- `mediaUrls` в state всегда массив; при переключении типа медиа очищаем оба поля (`mediaUrl=''`, `mediaUrls=[]`).
-- Caption в Telegram альбоме идёт только в первом элементе массива `media` вместе с `parse_mode`.
-- `sendMediaGroup` не поддерживает `reply_markup` (inline кнопки) — выводим предупреждение в UI, если у альбома указаны кнопки, и не включаем их в JSON.
-- Тестовая отправка (`JsonPanel`) для альбома работает без изменений: метод берётся из `getTelegramMethod`.
+```ts
+if (isMax) {
+  const token = getBotToken('max');
+  if (!token) { toast.error('Сначала укажите Access Token'); setSettingsOpen(true); return; }
+  if (!message.chatId.trim()) { toast.error('Укажите Chat ID (user_id)'); return; }
+  // album/media validation as in step 1
+
+  const userId = encodeURIComponent(message.chatId.trim());
+  const url = `https://platform-api.max.ru/messages?user_id=${userId}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': token,           // raw token, NOT "Bearer ..."
+      'Content-Type': 'application/json',
+    },
+    body: editMode ? jsonText : generatedJson,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok) toast.success(`MAX: отправлено${data.message_id ? ' • id: ' + data.message_id : ''}`);
+  else toast.error(`MAX: ${data?.message || data?.error || res.status}`);
+  return;
+}
+```
+
+**Note on CORS:** `platform-api.max.ru` may block direct browser calls. Mirroring the Telegram client-side approach for now; if CORS blocks, follow-up will move it through an edge function proxy.
+
+### Files changed
+- `src/components/builder/JsonPanel.tsx` — album validation + MAX test branch
+- `src/components/builder/AppHeader.tsx` — clickable brand block with hard-reset
+- `src/components/builder/BotSettingsDialog.tsx` — enable MAX token input
