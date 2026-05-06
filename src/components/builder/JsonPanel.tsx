@@ -73,48 +73,72 @@ export default function JsonPanel() {
   };
 
   const handleTest = async () => {
-    if (!isTelegram) {
-      toast.error('Тестирование MAX пока не поддерживается');
-      return;
-    }
-    const token = getBotToken('telegram');
-    if (!token) {
-      toast.error('Сначала укажите Bot Token в настройках');
-      setSettingsOpen(true);
-      return;
-    }
     if (!validation.valid) {
       toast.error('Сначала исправьте ошибки в JSON');
       return;
     }
     if (!message.chatId.trim()) {
-      toast.error('Укажите Chat ID');
+      toast.error(isMax ? 'Укажите Chat ID (user_id)' : 'Укажите Chat ID');
       return;
     }
-    if (message.mediaType !== 'none' && !message.mediaUrl.trim()) {
+    if (message.mediaType === 'album') {
+      const urls = (message.mediaUrls || []).filter(u => u.trim());
+      if (urls.length < 2) {
+        toast.error('Для альбома нужно минимум 2 фото');
+        return;
+      }
+    } else if (message.mediaType !== 'none' && !message.mediaUrl.trim()) {
       toast.error(`Укажите ссылку на медиа (${message.mediaType})`);
       return;
     }
 
+    const platformKey: 'telegram' | 'max' = isTelegram ? 'telegram' : 'max';
+    const token = getBotToken(platformKey);
+    if (!token) {
+      toast.error(isMax ? 'Сначала укажите Access Token' : 'Сначала укажите Bot Token в настройках');
+      setSettingsOpen(true);
+      return;
+    }
+
+    const body = editMode ? jsonText : generatedJson;
+
     setTesting(true);
     try {
-      const body = editMode ? jsonText : generatedJson;
-      const parsed = JSON.parse(body);
-      const method = getTelegramMethod(message);
-      const url = `https://api.telegram.org/bot${token}/${method}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        toast.success(`Сообщение отправлено • message_id: ${data.result?.message_id}`);
+      if (isTelegram) {
+        const parsed = JSON.parse(body);
+        const method = getTelegramMethod(message);
+        const url = `https://api.telegram.org/bot${token}/${method}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          toast.success(`Сообщение отправлено • message_id: ${data.result?.message_id}`);
+        } else {
+          toast.error(`Telegram: ${data.description || 'неизвестная ошибка'}`);
+        }
       } else {
-        toast.error(`Telegram: ${data.description || 'неизвестная ошибка'}`);
+        const userId = encodeURIComponent(message.chatId.trim());
+        const url = `https://platform-api.max.ru/messages?user_id=${userId}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json',
+          },
+          body,
+        });
+        const data = await res.json().catch(() => ({} as any));
+        if (res.ok) {
+          toast.success(`MAX: отправлено${data?.message_id ? ' • id: ' + data.message_id : ''}`);
+        } else {
+          toast.error(`MAX: ${data?.message || data?.error || 'HTTP ' + res.status}`);
+        }
       }
     } catch (e: any) {
-      toast.error(e?.message || 'Ошибка сети');
+      toast.error(e?.message || 'Ошибка сети (возможно CORS)');
     } finally {
       setTesting(false);
     }
