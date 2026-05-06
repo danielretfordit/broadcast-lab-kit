@@ -27,22 +27,44 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
   const { message, setPlatform, resetDraft } = useMessage();
   const project = useProjectInfo();
 
+  const handleHardReset = () => {
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('omni-builder-draft'))
+        .forEach(k => localStorage.removeItem(k));
+      Object.keys(sessionStorage)
+        .filter(k => k.startsWith('bot-settings:'))
+        .forEach(k => sessionStorage.removeItem(k));
+    } catch {}
+    window.location.reload();
+  };
+
   return (
     <TooltipProvider delayDuration={200}>
     <header className="border-b border-border bg-card shadow-sm">
       <div className="flex items-center justify-between px-5 py-2.5">
         <div className="flex items-center gap-4 min-w-0">
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shadow-sm">
-              CA
-            </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight text-foreground">CRM Ads</h1>
-              <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium">
-                Конструктор рассылок
-              </p>
-            </div>
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleHardReset}
+                className="flex items-center gap-3 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-lg"
+                aria-label="Сбросить кэш и перезагрузить"
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xs shadow-sm">
+                  CA
+                </div>
+                <div className="text-left">
+                  <h1 className="text-sm font-bold tracking-tight text-foreground">CRM Ads</h1>
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground font-medium">
+                    Конструктор рассылок
+                  </p>
+                </div>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Сбросить кэш и перезагрузить</TooltipContent>
+          </Tooltip>
 
           <div className="h-8 w-px bg-border flex-shrink-0" />
           <div className="min-w-0 flex items-center gap-2">

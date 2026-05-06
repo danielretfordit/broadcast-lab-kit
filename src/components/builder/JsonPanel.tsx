@@ -247,9 +247,9 @@ export default function JsonPanel() {
         <button
           type="button"
           onClick={handleTest}
-          disabled={testing || isMax}
+          disabled={testing}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title={isMax ? 'Тестирование MAX пока недоступно' : 'Отправить тестовое сообщение'}
+          title="Отправить тестовое сообщение"
         >
           {testing ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
           {testing ? 'Отправка...' : 'Тестировать'}
