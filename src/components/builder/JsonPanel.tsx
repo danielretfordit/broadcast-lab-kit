@@ -5,10 +5,12 @@ import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Lo
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import BotSettingsDialog, { getBotToken } from './BotSettingsDialog';
+import { useSearchParams } from 'react-router-dom';
 
 export default function JsonPanel() {
   const { message, setMessage } = useMessage();
   const [editMode, setEditMode] = useState(false);
+  const [searchParams] = useSearchParams();
   const [jsonText, setJsonText] = useState('');
   const [validation, setValidation] = useState<{ valid: boolean; error?: string }>({ valid: true });
   const [copied, setCopied] = useState(false);
@@ -18,6 +20,20 @@ export default function JsonPanel() {
   const generatedJson = JSON.stringify(buildJson(message), null, 2);
   const isTelegram = message.platform === 'telegram';
   const isMax = message.platform === 'max';
+
+  const getHttpJson = async () => {
+    const guid = searchParams.get('guid');
+    fetch(`/api/getTemplate?guid=${guid}`)
+      .then(res => res.json())
+      .then(data => {
+        const updates = parseJsonToMessage(data.json, message.platform);
+        setMessage(prev => ({ ...prev, ...updates }));
+      })
+  }
+
+  useEffect(() => {
+    getHttpJson();
+  }, []);
 
   useEffect(() => {
     if (!editMode) {

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export interface ProjectInfo {
@@ -10,12 +10,30 @@ export interface ProjectInfo {
 
 export function useProjectInfo(): ProjectInfo {
   const [searchParams] = useSearchParams();
+  const [httpData, setHttpData] = useState<any>(null);
+
+  const guid = searchParams.get('guid');
+
+  const getHttpJson = async () => {  
+    try {
+      const response = await fetch(`/api/getTemplate?guid=${guid}`);
+      const data = await response.json();
+      setHttpData(data);
+    } catch (error) {
+      console.error('Error fetching template:', error);
+    }
+  };
+
+  useEffect(() => {
+    getHttpJson();
+  }, []);
 
   return useMemo(() => {
-    const guid = searchParams.get('project') || searchParams.get('projectId') || null;
-    const id = searchParams.get('projectNum') || '—';
-    const name = searchParams.get('projectName') || 'Проект рассылок';
-    const description = searchParams.get('projectDesc') || 'Проект планирования рассылок в мессенджеры и в email';
-    return { guid, id, name, description };
-  }, [searchParams]);
+    return {
+      guid: guid || null,
+      id: httpData?.objectId || '—',
+      name: httpData?.topic || '—',
+      description: httpData?.description || '—',
+    };
+  }, [httpData]);
 }

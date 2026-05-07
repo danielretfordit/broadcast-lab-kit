@@ -2,6 +2,8 @@ import { useMessage } from '@/contexts/MessageContext';
 import { ExternalLink, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
+import { useSearchParams } from 'react-router-dom';
+import { buildJson } from '@/lib/message-builder';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
@@ -11,6 +13,7 @@ interface PreviewPanelProps {
 
 export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const { message } = useMessage();
+  const [searchParams] = useSearchParams();
 
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
@@ -78,10 +81,35 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isTelegram = message.platform === 'telegram';
   const isHtml = message.platform === 'html';
 
-  const handleSaveToProject = () => {
-    toast.success('Шаблон сохранён в проект', {
-      description: 'JSON-структура успешно отправлена в SAP',
-    });
+  const handleSaveToProject = async () => {
+    const guid = searchParams.get('guid');
+    const data = {
+      text: message.text,
+      json: buildJson(message)
+    };
+
+    let body = JSON.stringify(data);
+
+    try {
+      const response = await fetch(`/api/saveTemplate/?guid=${guid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body
+      });
+
+      const result = await response.json();
+      if (response.status > 202) {
+        throw new Error("Ошибка при сохранении шаблона: " + (result.error || response.statusText));
+      }
+      
+      toast.success('Шаблон сохранён в проект', {
+        description: 'JSON-структура успешно отправлена в SAP',
+      });
+    } catch (error) {
+      toast.error('Ошибка при сохранении шаблона');
+    }
   };
 
   const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : 'MAX';

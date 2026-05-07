@@ -24,6 +24,13 @@ export default function ViewOnlyPage({ lockedChannel }: ViewOnlyPageProps) {
       return;
     }
 
+    fetch(`/api/getTemplate?guid=${guid}`)
+    .then(res => res.json())
+    .then(data => {
+      setMessage(prev => ({ ...prev, ...data }));
+      setLoading(false);
+    })
+
     // TODO: replace with API call to load template by guid
     if (lockedChannel) {
       setMessage(prev => ({ ...prev, platform: lockedChannel }));
