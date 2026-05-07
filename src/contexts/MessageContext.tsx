@@ -21,6 +21,10 @@ function loadDraft(platform: Platform): MessageData {
       // Migration: ensure mediaUrls exists
       const merged = { ...createEmptyMessage(), ...parsed, platform };
       if (!Array.isArray(merged.mediaUrls)) merged.mediaUrls = [];
+      // Force correct parseMode per platform (no HTML for messengers)
+      if (platform === 'telegram') merged.parseMode = 'MarkdownV2';
+      else if (platform === 'max') merged.parseMode = 'Markdown';
+      else if (platform === 'html') merged.parseMode = 'HTML';
       return merged;
     }
   } catch {}
