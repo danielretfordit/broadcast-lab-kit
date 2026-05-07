@@ -238,7 +238,7 @@ export function parseMaxJson(parsed: Record<string, unknown>): Partial<MessageDa
 
   if (typeof parsed.text === 'string') result.text = parsed.text;
   if (parsed.format === 'html') result.parseMode = 'HTML';
-  else result.parseMode = 'MarkdownV2';
+  else result.parseMode = 'Markdown';
 
   result.mediaType = 'none';
   result.mediaUrl = '';
