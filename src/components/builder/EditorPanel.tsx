@@ -129,8 +129,12 @@ export default function EditorPanel() {
   const handleAiMessenger = async () => {
     setAiLoading(true);
     try {
+      const aiParseMode =
+        message.platform === 'telegram' ? 'MarkdownV2'
+        : message.platform === 'max' ? 'Markdown'
+        : 'HTML';
       const { data, error } = await supabase.functions.invoke('ai-message-editor', {
-        body: { prompt: aiPrompt, currentText: message.text, parseMode: message.parseMode },
+        body: { prompt: aiPrompt, currentText: message.text, parseMode: aiParseMode },
       });
       if (error) throw error;
       if (data?.text) {
