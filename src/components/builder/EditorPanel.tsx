@@ -35,7 +35,7 @@ export default function EditorPanel() {
         const src = selected || 'Цитата';
         wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
       }
-    } else if (message.parseMode === 'MarkdownV2') {
+    } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
       const isMax = message.platform === 'max';
       if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = isMax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
