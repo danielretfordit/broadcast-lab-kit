@@ -21,20 +21,6 @@ export default function JsonPanel() {
   const isTelegram = message.platform === 'telegram';
   const isMax = message.platform === 'max';
 
-  const getHttpJson = async () => {
-    const guid = searchParams.get('guid');
-    fetch(`/api/getTemplate?guid=${guid}`)
-      .then(res => res.json())
-      .then(data => {
-        const updates = parseJsonToMessage(data.json, message.platform);
-        setMessage(prev => ({ ...prev, ...updates }));
-      })
-  }
-
-  useEffect(() => {
-    getHttpJson();
-  }, []);
-
   useEffect(() => {
     if (!editMode) {
       setJsonText(generatedJson);

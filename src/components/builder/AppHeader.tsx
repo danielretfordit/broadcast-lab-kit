@@ -1,10 +1,13 @@
 import { useMessage } from '@/contexts/MessageContext';
-import { Platform } from '@/lib/message-builder';
+import { useEffect } from 'react';
+import { Platform , parseJsonToMessage } from '@/lib/message-builder';
 import { useProjectInfo } from '@/hooks/useProjectInfo';
 import { Info, Code2, Megaphone, Mail, RotateCcw, Lock } from 'lucide-react';
 import maxLogo from '@/assets/max-logo.png';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { useSearchParams } from 'react-router-dom';
+
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
@@ -24,8 +27,23 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode, lockedChannel }: AppHeaderProps) {
-  const { message, setPlatform, resetDraft } = useMessage();
+  const { message, setPlatform, resetDraft,setMessage } = useMessage();
   const project = useProjectInfo();
+  const [searchParams] = useSearchParams();
+
+  const getHttpJson = async () => {
+    const guid = searchParams.get('guid');
+    fetch(`/api/getTemplate?guid=${guid}`)
+      .then(res => res.json())
+      .then(data => {
+        const updates = parseJsonToMessage(data.json, message.platform);
+        setMessage(prev => ({ ...prev, ...updates }));
+      })
+  }
+
+  useEffect(() => {
+    getHttpJson();
+  }, []);
 
   const handleHardReset = () => {
     try {
