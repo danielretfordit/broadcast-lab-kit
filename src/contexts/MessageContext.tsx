@@ -25,7 +25,7 @@ function loadDraft(platform: Platform): MessageData {
     }
   } catch {}
   const empty = createEmptyMessage();
-  return { ...empty, platform, parseMode: platform === 'html' ? 'HTML' : empty.parseMode };
+  return { ...empty, platform, parseMode: defaultParseMode(platform) };
 }
 
 function saveDraft(msg: MessageData) {
@@ -55,7 +55,7 @@ export function MessageProvider({ children, initialPlatform, skipPersistence }: 
     if (skipPersistence) {
       const empty = createEmptyMessage();
       const platform = initialPlatform || 'telegram';
-      return { ...empty, platform, parseMode: platform === 'html' ? 'HTML' : empty.parseMode };
+      return { ...empty, platform, parseMode: defaultParseMode(platform) };
     }
     return loadDraft(initialPlatform || 'telegram');
   });
@@ -88,7 +88,7 @@ export function MessageProvider({ children, initialPlatform, skipPersistence }: 
       const next: MessageData = {
         ...empty,
         platform: prev.platform,
-        parseMode: prev.platform === 'html' ? 'HTML' : empty.parseMode,
+        parseMode: defaultParseMode(prev.platform),
       };
       try { localStorage.removeItem(storageKey(prev.platform)); } catch {}
       return next;
