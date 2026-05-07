@@ -1,86 +1,60 @@
-## Plan: 3 fixes for the JSON test flow + header
+## Цели
 
-### 1) Fix "Укажите ссылку на медиа (album)" error in test send
+1. Передавать корректный `parseMode` в AI-редактор для каждой платформы.
+2. Убрать выбор HTML-формата в селекторе для Telegram и MAX.
+3. Починить тестовую отправку в MAX (`Failed to fetch` — CORS из браузера на `platform-api.max.ru`).
 
-**File:** `src/components/builder/JsonPanel.tsx` (`handleTest`)
+---
 
-Current validation only checks `message.mediaUrl`, which is empty for albums. Replace the guard:
+## 1) AI parseMode в EditorPanel + edge функция
 
-```ts
-if (message.mediaType === 'album') {
-  const urls = (message.mediaUrls || []).filter(u => u.trim());
-  if (urls.length < 2) {
-    toast.error('Для альбома нужно минимум 2 фото');
-    return;
-  }
-} else if (message.mediaType !== 'none' && !message.mediaUrl.trim()) {
-  toast.error(`Укажите ссылку на медиа (${message.mediaType})`);
-  return;
-}
-```
+**`src/components/builder/EditorPanel.tsx`** (`handleAiMessenger`):
+- Вычислять `aiParseMode`:
+  - `telegram` → `'MarkdownV2'`
+  - `max` → `'Markdown'`
+  - `html` → `'HTML'`
+- Передавать его в body вызова `ai-message-editor` вместо `message.parseMode`.
 
-### 2) Click on logo / tool name reloads page with cache reset
+**`supabase/functions/ai-message-editor/index.ts`**:
+- Расширить инструкцию системного промпта: ветка `MarkdownV2` (Telegram), ветка `Markdown` (MAX, без экранирования спецсимволов, обычный `*bold*`, `_italic_`), ветка `HTML`.
 
-**File:** `src/components/builder/AppHeader.tsx`
+## 2) Убрать опцию HTML в селекторе формата
 
-Wrap the left brand block (logo square + "CRM Ads" / "Конструктор рассылок") in a clickable button:
+**`src/components/builder/EditorPanel.tsx`** (строки ~309–318):
+- Скрывать `<select>` целиком для `telegram`/`max` (там всегда соответствующий MarkdownV2/Markdown), либо оставить селектор отключённым с подписью текущего формата.
+- Для `telegram`: жёстко `MarkdownV2`. Для `max`: жёстко `Markdown` (новое значение `parseMode`).
 
-```ts
-const handleHardReset = () => {
-  try {
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('omni-builder-draft'))
-      .forEach(k => localStorage.removeItem(k));
-    Object.keys(sessionStorage)
-      .filter(k => k.startsWith('bot-settings:'))
-      .forEach(k => sessionStorage.removeItem(k));
-  } catch {}
-  window.location.reload(); // preserve URL (?type/?channel locks)
-};
-```
+**`src/lib/message-builder.ts`**:
+- Расширить тип `parseMode` до `'MarkdownV2' | 'Markdown' | 'HTML'`.
+- В `buildMaxJson` `format` ставить `'markdown'` всегда (как и сейчас).
+- В `prepareMarkdownV2` использовать только при `parseMode === 'MarkdownV2'` (Telegram). Для MAX (`Markdown`) — текст идёт «как есть», без экранирования.
 
-Add `cursor-pointer`, hover opacity, tooltip "Сбросить кэш и перезагрузить".
+**`src/contexts/MessageContext.tsx`**:
+- При смене платформы устанавливать соответствующий `parseMode`: telegram→MarkdownV2, max→Markdown, html→HTML.
 
-### 3) MAX test sending
+## 3) MAX test send через edge-функцию (фикс CORS)
 
-`user_id` для MAX берётся из поля **Chat ID редактора** (`message.chatId`).
+Браузер не может вызывать `https://platform-api.max.ru` напрямую — нужен прокси.
 
-**a) `src/components/builder/BotSettingsDialog.tsx`** — enable MAX input:
-- Remove all `disabled={isMax}`.
-- Label MAX: `Access Token`, placeholder `f9LHodD0cOIR5XiHPjx5...`.
-- Helper text MAX: "Укажите Access Token, выданный платформой MAX".
+**Новая edge функция `supabase/functions/max-send/index.ts`** (verify_jwt = false, CORS headers):
+- POST вход: `{ token: string, userId: string, payload: any }`.
+- Делает `fetch('https://platform-api.max.ru/messages?user_id=' + encodeURIComponent(userId), { method:'POST', headers:{ Authorization: token, 'Content-Type':'application/json' }, body: JSON.stringify(payload) })`.
+- Возвращает `{ status, body }` клиенту.
 
-**b) `src/components/builder/JsonPanel.tsx`** — implement MAX branch in `handleTest`:
+**`supabase/config.toml`**: добавить блок для `max-send` с `verify_jwt = false`.
 
-Remove the early `if (!isTelegram)` block and the `disabled={isMax}` on the Тестировать button. Then:
+**`src/components/builder/JsonPanel.tsx`** (`handleTest`, ветка `!isTelegram`):
+- Заменить прямой fetch на `supabase.functions.invoke('max-send', { body: { token, userId: message.chatId.trim(), payload: JSON.parse(body) } })`.
+- Показывать toast в зависимости от `data.status` / `data.body`.
 
-```ts
-if (isMax) {
-  const token = getBotToken('max');
-  if (!token) { toast.error('Сначала укажите Access Token'); setSettingsOpen(true); return; }
-  if (!message.chatId.trim()) { toast.error('Укажите Chat ID (user_id)'); return; }
-  // album/media validation as in step 1
+---
 
-  const userId = encodeURIComponent(message.chatId.trim());
-  const url = `https://platform-api.max.ru/messages?user_id=${userId}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Authorization': token,           // raw token, NOT "Bearer ..."
-      'Content-Type': 'application/json',
-    },
-    body: editMode ? jsonText : generatedJson,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (res.ok) toast.success(`MAX: отправлено${data.message_id ? ' • id: ' + data.message_id : ''}`);
-  else toast.error(`MAX: ${data?.message || data?.error || res.status}`);
-  return;
-}
-```
+## Файлы
 
-**Note on CORS:** `platform-api.max.ru` may block direct browser calls. Mirroring the Telegram client-side approach for now; if CORS blocks, follow-up will move it through an edge function proxy.
-
-### Files changed
-- `src/components/builder/JsonPanel.tsx` — album validation + MAX test branch
-- `src/components/builder/AppHeader.tsx` — clickable brand block with hard-reset
-- `src/components/builder/BotSettingsDialog.tsx` — enable MAX token input
+- `src/components/builder/EditorPanel.tsx`
+- `src/contexts/MessageContext.tsx`
+- `src/lib/message-builder.ts`
+- `src/components/builder/JsonPanel.tsx`
+- `supabase/functions/ai-message-editor/index.ts`
+- `supabase/functions/max-send/index.ts` (новый)
+- `supabase/config.toml`
