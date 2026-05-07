@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { MessageData, createEmptyMessage, Platform } from '@/lib/message-builder';
 
+function defaultParseMode(platform: Platform): MessageData['parseMode'] {
+  if (platform === 'html') return 'HTML';
+  if (platform === 'max') return 'Markdown';
+  return 'MarkdownV2';
+}
+
 const STORAGE_PREFIX = 'omni-builder-draft:';
 
 function storageKey(platform: Platform) {
@@ -15,11 +21,15 @@ function loadDraft(platform: Platform): MessageData {
       // Migration: ensure mediaUrls exists
       const merged = { ...createEmptyMessage(), ...parsed, platform };
       if (!Array.isArray(merged.mediaUrls)) merged.mediaUrls = [];
+      // Force correct parseMode per platform (no HTML for messengers)
+      if (platform === 'telegram') merged.parseMode = 'MarkdownV2';
+      else if (platform === 'max') merged.parseMode = 'Markdown';
+      else if (platform === 'html') merged.parseMode = 'HTML';
       return merged;
     }
   } catch {}
   const empty = createEmptyMessage();
-  return { ...empty, platform, parseMode: platform === 'html' ? 'HTML' : empty.parseMode };
+  return { ...empty, platform, parseMode: defaultParseMode(platform) };
 }
 
 function saveDraft(msg: MessageData) {
@@ -49,7 +59,7 @@ export function MessageProvider({ children, initialPlatform, skipPersistence }: 
     if (skipPersistence) {
       const empty = createEmptyMessage();
       const platform = initialPlatform || 'telegram';
-      return { ...empty, platform, parseMode: platform === 'html' ? 'HTML' : empty.parseMode };
+      return { ...empty, platform, parseMode: defaultParseMode(platform) };
     }
     return loadDraft(initialPlatform || 'telegram');
   });
@@ -82,7 +92,7 @@ export function MessageProvider({ children, initialPlatform, skipPersistence }: 
       const next: MessageData = {
         ...empty,
         platform: prev.platform,
-        parseMode: prev.platform === 'html' ? 'HTML' : empty.parseMode,
+        parseMode: defaultParseMode(prev.platform),
       };
       try { localStorage.removeItem(storageKey(prev.platform)); } catch {}
       return next;

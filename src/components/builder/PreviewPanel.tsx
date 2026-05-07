@@ -25,7 +25,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
 
     const renderInline = (raw: string): string => {
       let html = raw;
-      if (message.parseMode === 'MarkdownV2') {
+      if ((message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown')) {
         const isMax = message.platform === 'max';
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank" rel="noopener">$1</a>');
         html = html.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs font-mono">$1</code>');
@@ -53,7 +53,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     };
 
     // Group consecutive "> " lines into blockquotes (markdown only)
-    if (message.parseMode === 'MarkdownV2') {
+    if ((message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown')) {
       const lines = text.split('\n');
       const groups: { quote: boolean; lines: string[] }[] = [];
       for (const ln of lines) {

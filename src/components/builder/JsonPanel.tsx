@@ -3,6 +3,7 @@ import { useMessage } from '@/contexts/MessageContext';
 import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTelegramMethod } from '@/lib/message-builder';
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import BotSettingsDialog, { getBotToken } from './BotSettingsDialog';
 
 export default function JsonPanel() {
@@ -120,21 +121,18 @@ export default function JsonPanel() {
           toast.error(`Telegram: ${data.description || 'неизвестная ошибка'}`);
         }
       } else {
-        const userId = encodeURIComponent(message.chatId.trim());
-        const url = `https://platform-api.max.ru/messages?user_id=${userId}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Authorization': token,
-            'Content-Type': 'application/json',
-          },
-          body,
+        const payload = JSON.parse(body);
+        const { data, error } = await supabase.functions.invoke('max-send', {
+          body: { token, userId: message.chatId.trim(), payload },
         });
-        const data = await res.json().catch(() => ({} as any));
-        if (res.ok) {
-          toast.success(`MAX: отправлено${data?.message_id ? ' • id: ' + data.message_id : ''}`);
+        if (error) {
+          toast.error(`MAX: ${error.message}`);
+        } else if (data?.ok) {
+          const mid = data?.body?.message?.mid || data?.body?.message_id;
+          toast.success(`MAX: отправлено${mid ? ' • id: ' + mid : ''}`);
         } else {
-          toast.error(`MAX: ${data?.message || data?.error || 'HTTP ' + res.status}`);
+          const msg = data?.body?.message || data?.body?.error || data?.body?.code || JSON.stringify(data?.body);
+          toast.error(`MAX: ${msg || 'HTTP ' + data?.status}`);
         }
       }
     } catch (e: any) {

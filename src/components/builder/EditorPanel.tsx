@@ -35,7 +35,7 @@ export default function EditorPanel() {
         const src = selected || 'Цитата';
         wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
       }
-    } else if (message.parseMode === 'MarkdownV2') {
+    } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
       const isMax = message.platform === 'max';
       if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = isMax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
@@ -129,8 +129,12 @@ export default function EditorPanel() {
   const handleAiMessenger = async () => {
     setAiLoading(true);
     try {
+      const aiParseMode =
+        message.platform === 'telegram' ? 'MarkdownV2'
+        : message.platform === 'max' ? 'Markdown'
+        : 'HTML';
       const { data, error } = await supabase.functions.invoke('ai-message-editor', {
-        body: { prompt: aiPrompt, currentText: message.text, parseMode: message.parseMode },
+        body: { prompt: aiPrompt, currentText: message.text, parseMode: aiParseMode },
       });
       if (error) throw error;
       if (data?.text) {
@@ -307,14 +311,9 @@ export default function EditorPanel() {
             ) : 'Текст сообщения'}
           </label>
           {!isHtml && (
-            <select
-              value={message.parseMode}
-              onChange={e => updateField('parseMode', e.target.value as 'MarkdownV2' | 'HTML')}
-              className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground cursor-pointer"
-            >
-              <option value="MarkdownV2">MarkdownV2</option>
-              <option value="HTML">HTML</option>
-            </select>
+            <span className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground">
+              {message.platform === 'telegram' ? 'MarkdownV2' : 'Markdown'}
+            </span>
           )}
         </div>
 

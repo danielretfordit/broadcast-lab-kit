@@ -13,9 +13,16 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You are an expert marketing copywriter for messenger campaigns (Telegram, MAX/VK).
-The user gives you a message text and an instruction. You must return ONLY the improved text — no explanations, no quotes, no markdown code blocks.
-Format the output using ${parseMode === 'HTML' ? 'HTML tags (<b>, <i>, <u>, <a href="...">)' : 'Telegram MarkdownV2 (*bold*, _italic_, __underline__, [text](url))'}.
+    const formatInstructions =
+      parseMode === 'HTML'
+        ? 'Format the output using HTML tags (<b>, <i>, <u>, <a href="...">, <blockquote>).'
+        : parseMode === 'Markdown'
+          ? 'Format the output using MAX Markdown: **bold**, *italic*, ++underline++, ~~strike~~, [text](url), blockquotes start each line with "> ". Do NOT escape special characters with backslashes.'
+          : 'Format the output using Telegram MarkdownV2: *bold*, _italic_, __underline__, ~strike~, [text](url), blockquotes start each line with "> ". Escape ONLY characters that are not part of formatting/markup, per Telegram MarkdownV2 spec (_ * [ ] ( ) ~ ` > # + - = | { } . !).';
+
+    const systemPrompt = `You are an expert marketing copywriter for messenger campaigns (Telegram, MAX).
+The user gives you a message text and an instruction. You must return ONLY the improved text — no explanations, no quotes, no code blocks.
+${formatInstructions}
 Keep the text concise, engaging, and appropriate for a messenger broadcast.
 If the current text is empty, generate a new message based on the instruction.`;
 
