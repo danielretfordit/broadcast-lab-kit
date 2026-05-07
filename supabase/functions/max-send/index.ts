@@ -9,19 +9,20 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { token, userId, payload } = await req.json();
+    const { token, chatId, userId, payload } = await req.json();
+    const target = (chatId ?? userId) as string | undefined;
     if (!token || typeof token !== "string") {
       return new Response(JSON.stringify({ error: "token required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (!userId || typeof userId !== "string") {
-      return new Response(JSON.stringify({ error: "userId required" }), {
+    if (!target || typeof target !== "string") {
+      return new Response(JSON.stringify({ error: "chatId required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const url = `https://platform-api.max.ru/messages?user_id=${encodeURIComponent(userId)}`;
+    const url = `https://platform-api.max.ru/messages?chat_id=${encodeURIComponent(target)}`;
     const upstream = await fetch(url, {
       method: "POST",
       headers: {
