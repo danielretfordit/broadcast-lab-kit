@@ -123,7 +123,7 @@ export default function JsonPanel() {
       } else {
         const payload = JSON.parse(body);
         const { data, error } = await supabase.functions.invoke('max-send', {
-          body: { token, userId: message.chatId.trim(), payload },
+          body: { token, chatId: message.chatId.trim(), payload },
         });
         if (error) {
           toast.error(`MAX: ${error.message}`);
