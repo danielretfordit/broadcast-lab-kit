@@ -3,6 +3,7 @@ import { useMessage } from '@/contexts/MessageContext';
 import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTelegramMethod } from '@/lib/message-builder';
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import BotSettingsDialog, { getBotToken } from './BotSettingsDialog';
 
 export default function JsonPanel() {
