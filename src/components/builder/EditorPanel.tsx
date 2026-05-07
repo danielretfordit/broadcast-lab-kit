@@ -311,14 +311,9 @@ export default function EditorPanel() {
             ) : 'Текст сообщения'}
           </label>
           {!isHtml && (
-            <select
-              value={message.parseMode}
-              onChange={e => updateField('parseMode', e.target.value as 'MarkdownV2' | 'HTML')}
-              className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground cursor-pointer"
-            >
-              <option value="MarkdownV2">MarkdownV2</option>
-              <option value="HTML">HTML</option>
-            </select>
+            <span className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground">
+              {message.platform === 'telegram' ? 'MarkdownV2' : 'Markdown'}
+            </span>
           )}
         </div>
 
