@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMessage } from '@/contexts/MessageContext';
 import PreviewPanel from '@/components/builder/PreviewPanel';
 import { Loader2 } from 'lucide-react';
-import { Platform } from '@/lib/message-builder';
+import { Platform, parseJsonToMessage  } from '@/lib/message-builder';
 
 interface ViewOnlyPageProps {
   lockedChannel?: Platform | null;
@@ -11,11 +11,25 @@ interface ViewOnlyPageProps {
 
 export default function ViewOnlyPage({ lockedChannel }: ViewOnlyPageProps) {
   const [searchParams] = useSearchParams();
-  const { setMessage } = useMessage();
+  const { message, setMessage } = useMessage();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const guid = searchParams.get('guid') || searchParams.get('project');
+  const guid = searchParams.get('guid');
+
+  const getHttpJson = async () => {
+    const guid = searchParams.get('guid');
+    fetch(`/api/getTemplate?guid=${guid}`)
+      .then(res => res.json())
+      .then(data => {
+        const updates = parseJsonToMessage(data.json, message.platform);
+        setMessage(prev => ({ ...prev, ...updates }));
+      })
+  }
+
+  useEffect(() => {
+    getHttpJson();
+  }, []);
 
   useEffect(() => {
     if (!guid) {
@@ -23,14 +37,6 @@ export default function ViewOnlyPage({ lockedChannel }: ViewOnlyPageProps) {
       setLoading(false);
       return;
     }
-
-    fetch(`/api/getTemplate?guid=${guid}`)
-    .then(res => res.json())
-    .then(data => {
-      setMessage(prev => ({ ...prev, ...data }));
-      setLoading(false);
-    })
-
     // TODO: replace with API call to load template by guid
     if (lockedChannel) {
       setMessage(prev => ({ ...prev, platform: lockedChannel }));

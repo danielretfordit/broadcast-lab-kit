@@ -131,14 +131,16 @@ export default function EditorPanel() {
     try {
       const aiParseMode =
         message.platform === 'telegram' ? 'MarkdownV2'
-        : message.platform === 'max' ? 'Markdown'
-        : 'HTML';
-      const { data, error } = await supabase.functions.invoke('ai-message-editor', {
-        body: { prompt: aiPrompt, currentText: message.text, parseMode: aiParseMode },
-      });
-      if (error) throw error;
-      if (data?.text) {
-        updateField('text', data.text);
+          : message.platform === 'max' ? 'Markdown'
+            : 'HTML';
+      let body = JSON.stringify({ prompt: aiPrompt, currentText: message.text, parseMode: aiParseMode });
+      const response = await fetch(`/api/generateAIText`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
+      let responceJSON = await response.json();
+      if (response.status > 202) {
+        throw new Error("Ошибка при сохранении шаблона: " + (response.statusText));
+      }
+      if (responceJSON?.text) {
+        updateField('text', responceJSON.text);
         setAiPrompt('');
         toast.success('Текст обновлён с помощью AI');
       }
@@ -153,12 +155,14 @@ export default function EditorPanel() {
   const handleAiHtml = async () => {
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('ai-html-editor', {
-        body: { prompt: aiPrompt, currentHtml: message.text },
-      });
-      if (error) throw error;
-      if (data?.html) {
-        updateField('text', data.html);
+      let body = JSON.stringify({ prompt: aiPrompt, currentHtml: message.text });
+      const response = await fetch(`/api/generateAIText`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body });
+      let responceJSON = await response.json();
+      if (response.status > 202) {
+        throw new Error("Ошибка при сохранении шаблона: " + (response.statusText));
+      }
+      if (responceJSON?.text) {
+        updateField('text', responceJSON.text);
         updateField('parseMode', 'HTML');
         setAiPrompt('');
         toast.success('HTML шаблон обновлён с помощью AI');
@@ -204,11 +208,10 @@ export default function EditorPanel() {
                   }
                   updateField('mediaType', mt.id);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  message.mediaType === mt.id
-                    ? 'bg-primary/10 text-primary border border-primary/25 shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-secondary'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${message.mediaType === mt.id
+                  ? 'bg-primary/10 text-primary border border-primary/25 shadow-sm'
+                  : 'bg-muted text-muted-foreground hover:bg-secondary'
+                  }`}
               >
                 {mt.icon && <mt.icon size={13} />}
                 {mt.label}
@@ -222,11 +225,10 @@ export default function EditorPanel() {
                 value={message.mediaUrl}
                 onChange={e => updateField('mediaUrl', e.target.value)}
                 placeholder={mediaPlaceholders[message.mediaType] || 'https://...'}
-                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
-                  mediaUrlMissing
-                    ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
-                    : 'border-border focus:ring-primary/20 focus:border-primary/40'
-                }`}
+                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${mediaUrlMissing
+                  ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
+                  : 'border-border focus:ring-primary/20 focus:border-primary/40'
+                  }`}
               />
               {mediaUrlMissing && (
                 <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
@@ -246,11 +248,10 @@ export default function EditorPanel() {
                     value={url}
                     onChange={e => updateAlbumUrl(idx, e.target.value)}
                     placeholder="https://example.com/photo.jpg"
-                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
-                      !url.trim()
-                        ? 'border-destructive/40 focus:ring-destructive/20 focus:border-destructive/60'
-                        : 'border-border focus:ring-primary/20 focus:border-primary/40'
-                    }`}
+                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${!url.trim()
+                      ? 'border-destructive/40 focus:ring-destructive/20 focus:border-destructive/60'
+                      : 'border-border focus:ring-primary/20 focus:border-primary/40'
+                      }`}
                   />
                   <button
                     type="button"
