@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { MessageData, createEmptyMessage, Platform } from '@/lib/message-builder';
 
+function defaultParseMode(platform: Platform): MessageData['parseMode'] {
+  if (platform === 'html') return 'HTML';
+  if (platform === 'max') return 'Markdown';
+  return 'MarkdownV2';
+}
+
 const STORAGE_PREFIX = 'omni-builder-draft:';
 
 function storageKey(platform: Platform) {
