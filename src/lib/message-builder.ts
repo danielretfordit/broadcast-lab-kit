@@ -22,7 +22,7 @@ export interface MessageData {
   mediaType: 'photo' | 'video' | 'document' | 'album' | 'none';
   text: string;
   subject: string;
-  parseMode: 'MarkdownV2' | 'HTML';
+  parseMode: 'MarkdownV2' | 'Markdown' | 'HTML';
   buttonRows: ButtonRow[];
 }
 
