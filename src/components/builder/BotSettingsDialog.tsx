@@ -111,7 +111,7 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
               type="text"
               value={chatId}
               onChange={e => setChatId(e.target.value)}
-              placeholder="условный"
+              placeholder="ID"
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
             <p className="text-[10px] text-muted-foreground mt-1.5">
