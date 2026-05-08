@@ -2,7 +2,7 @@ import { useMessage } from '@/contexts/MessageContext';
 import { useEffect } from 'react';
 import { Platform , parseJsonToMessage } from '@/lib/message-builder';
 import { useProjectInfo } from '@/hooks/useProjectInfo';
-import { Info, Code2, Megaphone, Mail, RotateCcw, Lock } from 'lucide-react';
+import { Info, Code2, Megaphone, Mail, RotateCcw, Lock, Coins, MessageCircle, Briefcase, MessageSquare, Smartphone } from 'lucide-react';
 import maxLogo from '@/assets/max-logo.png';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -197,6 +197,30 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
               </button>
             );
           })}
+
+          {/* Disabled paid channels (in development) */}
+          {([
+            { id: 'viber', label: 'Viber', Icon: MessageCircle },
+            { id: 'viber-business', label: 'Viber Business', Icon: Briefcase },
+            { id: 'whatsapp', label: 'WhatsApp', Icon: MessageSquare },
+            { id: 'sms', label: 'SMS', Icon: Smartphone },
+          ] as const).map(ch => (
+            <Tooltip key={ch.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  disabled
+                  className="relative flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-transparent"
+                >
+                  <ch.Icon size={14} />
+                  {ch.label}
+                  <Lock size={10} className="ml-0.5" />
+                  <Coins size={10} className="text-amber-500/70" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>В разработке • Платный канал</TooltipContent>
+            </Tooltip>
+          ))}
         </div>
       )}
     </header>
