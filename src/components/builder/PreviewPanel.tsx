@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { ExternalLink, Save } from 'lucide-react';
+import { ExternalLink, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
@@ -14,7 +15,7 @@ interface PreviewPanelProps {
 export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const { message } = useMessage();
   const [searchParams] = useSearchParams();
-
+  const [saving, setSaving] = useState(false);
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
   const mediaInvalid =
@@ -90,6 +91,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
 
     let body = JSON.stringify(data);
 
+    setSaving(true);
     try {
       const response = await fetch(`/api/saveTemplate/?guid=${guid}`, {
         method: 'POST',
@@ -99,16 +101,18 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
         body: body
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
       if (response.status > 202) {
         throw new Error("Ошибка при сохранении шаблона: " + (result.error || response.statusText));
       }
-      
+
       toast.success('Шаблон сохранён в проект', {
         description: 'JSON-структура успешно отправлена в SAP',
       });
     } catch (error) {
       toast.error('Ошибка при сохранении шаблона');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -276,12 +280,12 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           <button
             type="button"
             onClick={handleSaveToProject}
-            disabled={saveDisabled}
+            disabled={saveDisabled || saving}
             title={saveDisabled ? 'Заполните все ссылки на медиа перед сохранением' : ''}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
           >
-            <Save size={15} />
-            {saveDisabled ? 'Заполните медиа для сохранения' : 'Сохранить в проект'}
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+            {saving ? 'Сохранение...' : saveDisabled ? 'Заполните медиа для сохранения' : 'Сохранить в проект'}
           </button>
         </div>
       )}

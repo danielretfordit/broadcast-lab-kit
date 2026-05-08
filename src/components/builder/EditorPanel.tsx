@@ -289,20 +289,6 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {/* Chat ID */}
-      {!isHtml && (
-        <section>
-          <label className="section-label">Chat ID</label>
-          <input
-            type="text"
-            value={message.chatId}
-            onChange={e => updateField('chatId', e.target.value)}
-            placeholder="258110807"
-            className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-          />
-        </section>
-      )}
-
       {/* Body */}
       <section className="flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">

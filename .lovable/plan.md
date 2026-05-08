@@ -1,60 +1,47 @@
-## Цели
+## Изменения
 
-1. Передавать корректный `parseMode` в AI-редактор для каждой платформы.
-2. Убрать выбор HTML-формата в селекторе для Telegram и MAX.
-3. Починить тестовую отправку в MAX (`Failed to fetch` — CORS из браузера на `platform-api.max.ru`).
+### 1) Перенос Chat ID в настройки тестовой отправки
 
----
+**`src/components/builder/EditorPanel.tsx`** — удалить блок «Chat ID» (строки 292–304). Логика JSON не зависит от UI этого поля (в `buildJson` `chat_id` не пишется), поэтому сборка JSON остаётся без изменений.
 
-## 1) AI parseMode в EditorPanel + edge функция
+**`src/components/builder/BotSettingsDialog.tsx`** — добавить поле «Chat ID для теста»:
+- Хранить в `sessionStorage` по ключу `bot-settings:chatId:<platform>`.
+- Экспортировать `getTestChatId(platform)` рядом с `getBotToken`.
+- Поле подписать: для Telegram — «Chat ID», для MAX — «Chat ID (user_id для теста)».
 
-**`src/components/builder/EditorPanel.tsx`** (`handleAiMessenger`):
-- Вычислять `aiParseMode`:
-  - `telegram` → `'MarkdownV2'`
-  - `max` → `'Markdown'`
-  - `html` → `'HTML'`
-- Передавать его в body вызова `ai-message-editor` вместо `message.parseMode`.
+**`src/contexts/MessageContext.tsx`** — поле `chatId` остаётся в `MessageData` (используется в `handleTest`), но теперь синхронизируется из настроек: при открытии/использовании теста `JsonPanel` подставляет `chatId` из `getTestChatId`.
 
-**`supabase/functions/ai-message-editor/index.ts`**:
-- Расширить инструкцию системного промпта: ветка `MarkdownV2` (Telegram), ветка `Markdown` (MAX, без экранирования спецсимволов, обычный `*bold*`, `_italic_`), ветка `HTML`.
+**`src/components/builder/JsonPanel.tsx`** (`handleTest`):
+- Брать `chatId` через `getTestChatId(platformKey)` вместо `message.chatId`.
+- Если пусто — `toast.error` и открыть `BotSettingsDialog`.
+- Удалить зависимость от `message.chatId` для валидации.
 
-## 2) Убрать опцию HTML в селекторе формата
+### 2) Спиннер при сохранении шаблона
 
-**`src/components/builder/EditorPanel.tsx`** (строки ~309–318):
-- Скрывать `<select>` целиком для `telegram`/`max` (там всегда соответствующий MarkdownV2/Markdown), либо оставить селектор отключённым с подписью текущего формата.
-- Для `telegram`: жёстко `MarkdownV2`. Для `max`: жёстко `Markdown` (новое значение `parseMode`).
+**`src/components/builder/PreviewPanel.tsx`** (`handleSaveToProject`, кнопка «Сохранить в проект»):
+- Добавить `const [saving, setSaving] = useState(false)`.
+- Обернуть запрос в `try/finally` с `setSaving(true/false)`.
+- В кнопке: `disabled={saveDisabled || saving}`, иконка — `<Loader2 className="animate-spin" />` пока `saving`, иначе `<Save />`. Текст: «Сохранение...» / прежний текст.
 
-**`src/lib/message-builder.ts`**:
-- Расширить тип `parseMode` до `'MarkdownV2' | 'Markdown' | 'HTML'`.
-- В `buildMaxJson` `format` ставить `'markdown'` всегда (как и сейчас).
-- В `prepareMarkdownV2` использовать только при `parseMode === 'MarkdownV2'` (Telegram). Для MAX (`Markdown`) — текст идёт «как есть», без экранирования.
+### 3) Заблокированные каналы в шапке
 
-**`src/contexts/MessageContext.tsx`**:
-- При смене платформы устанавливать соответствующий `parseMode`: telegram→MarkdownV2, max→Markdown, html→HTML.
+**`src/components/builder/AppHeader.tsx`** (массив `platforms` и рендер табов каналов):
+- После Email добавить четыре «disabled» кнопки: Viber, Viber Business, WhatsApp, SMS.
+- Использовать иконки `lucide-react`: `MessageCircle` (Viber), `Briefcase` (Viber Business), `MessageSquare` (WhatsApp), `Smartphone` (SMS).
+- На каждой кнопке: иконка канала + маленькая `Lock` (замочек) + `Coins` (монетка, платный канал) в правом верхнем углу.
+- Стили: серый фон (`bg-muted/40 text-muted-foreground/50`), `cursor-not-allowed`, `disabled`, без обработчика клика.
+- Тултип «В разработке • Платный канал».
 
-## 3) MAX test send через edge-функцию (фикс CORS)
+### Технические детали
 
-Браузер не может вызывать `https://platform-api.max.ru` напрямую — нужен прокси.
+- `chatId` остаётся в типе `MessageData`, но больше не отображается в редакторе. Это не нарушает контракт `buildJson`, т.к. он не использует `chatId` (только `handleTest`).
+- В `JsonPanel.handleTest` источник `chatId` меняется с `message.chatId` на `sessionStorage`-значение через `getTestChatId(platform)`.
+- Новые кнопки каналов чисто декоративные — никакой `Platform` тип не расширяется.
 
-**Новая edge функция `supabase/functions/max-send/index.ts`** (verify_jwt = false, CORS headers):
-- POST вход: `{ token: string, userId: string, payload: any }`.
-- Делает `fetch('https://platform-api.max.ru/messages?user_id=' + encodeURIComponent(userId), { method:'POST', headers:{ Authorization: token, 'Content-Type':'application/json' }, body: JSON.stringify(payload) })`.
-- Возвращает `{ status, body }` клиенту.
-
-**`supabase/config.toml`**: добавить блок для `max-send` с `verify_jwt = false`.
-
-**`src/components/builder/JsonPanel.tsx`** (`handleTest`, ветка `!isTelegram`):
-- Заменить прямой fetch на `supabase.functions.invoke('max-send', { body: { token, userId: message.chatId.trim(), payload: JSON.parse(body) } })`.
-- Показывать toast в зависимости от `data.status` / `data.body`.
-
----
-
-## Файлы
+### Файлы
 
 - `src/components/builder/EditorPanel.tsx`
-- `src/contexts/MessageContext.tsx`
-- `src/lib/message-builder.ts`
 - `src/components/builder/JsonPanel.tsx`
-- `supabase/functions/ai-message-editor/index.ts`
-- `supabase/functions/max-send/index.ts` (новый)
-- `supabase/config.toml`
+- `src/components/builder/BotSettingsDialog.tsx`
+- `src/components/builder/PreviewPanel.tsx`
+- `src/components/builder/AppHeader.tsx`
