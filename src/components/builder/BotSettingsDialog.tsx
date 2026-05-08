@@ -4,10 +4,19 @@ import { toast } from 'sonner';
 import { Lock, Trash2 } from 'lucide-react';
 
 const STORAGE_KEY_PREFIX = 'bot-settings:';
+const CHAT_ID_PREFIX = 'bot-settings:chatId:';
 
 export function getBotToken(platform: 'telegram' | 'max'): string | null {
   try {
     return sessionStorage.getItem(`${STORAGE_KEY_PREFIX}${platform}`);
+  } catch {
+    return null;
+  }
+}
+
+export function getTestChatId(platform: 'telegram' | 'max'): string | null {
+  try {
+    return sessionStorage.getItem(`${CHAT_ID_PREFIX}${platform}`);
   } catch {
     return null;
   }
@@ -21,10 +30,12 @@ interface BotSettingsDialogProps {
 
 export default function BotSettingsDialog({ open, onOpenChange, platform }: BotSettingsDialogProps) {
   const [token, setToken] = useState('');
+  const [chatId, setChatId] = useState('');
 
   useEffect(() => {
     if (open) {
       setToken(getBotToken(platform) || '');
+      setChatId(getTestChatId(platform) || '');
     }
   }, [open, platform]);
 
@@ -32,21 +43,29 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
     try {
       if (token.trim()) {
         sessionStorage.setItem(`${STORAGE_KEY_PREFIX}${platform}`, token.trim());
-        toast.success('Токен сохранён в этой сессии');
       } else {
         sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`);
-        toast.success('Токен очищен');
       }
+      if (chatId.trim()) {
+        sessionStorage.setItem(`${CHAT_ID_PREFIX}${platform}`, chatId.trim());
+      } else {
+        sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
+      }
+      toast.success('Сохранено в этой сессии');
       onOpenChange(false);
     } catch {
-      toast.error('Не удалось сохранить токен');
+      toast.error('Не удалось сохранить');
     }
   };
 
   const clear = () => {
     setToken('');
-    try { sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`); } catch {}
-    toast.success('Токен очищен');
+    setChatId('');
+    try {
+      sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`);
+      sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
+    } catch {}
+    toast.success('Очищено');
   };
 
   const isMax = platform === 'max';
@@ -60,8 +79,8 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
             Настройки {isMax ? 'MAX' : 'Telegram'} бота
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Токен хранится только в этой вкладке браузера и автоматически очищается при её закрытии.
-            Никуда не отправляется.
+            Токен и Chat ID хранятся только в этой вкладке браузера и автоматически очищаются при её закрытии.
+            Никуда не отправляются.
           </DialogDescription>
         </DialogHeader>
 
@@ -81,6 +100,22 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
               {isMax
                 ? 'Укажите Access Token, выданный платформой MAX'
                 : 'Получите токен у @BotFather в Telegram'}
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-foreground mb-1.5 block">
+              {isMax ? 'Chat ID (user_id для теста)' : 'Chat ID для теста'}
+            </label>
+            <input
+              type="text"
+              value={chatId}
+              onChange={e => setChatId(e.target.value)}
+              placeholder="258110807"
+              className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              Используется только при отправке тестового сообщения.
             </p>
           </div>
         </div>

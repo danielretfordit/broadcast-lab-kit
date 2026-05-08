@@ -4,7 +4,7 @@ import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTe
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import BotSettingsDialog, { getBotToken } from './BotSettingsDialog';
+import BotSettingsDialog, { getBotToken, getTestChatId } from './BotSettingsDialog';
 import { useSearchParams } from 'react-router-dom';
 
 export default function JsonPanel() {
@@ -80,8 +80,11 @@ export default function JsonPanel() {
       toast.error('Сначала исправьте ошибки в JSON');
       return;
     }
-    if (!message.chatId.trim()) {
-      toast.error(isMax ? 'Укажите Chat ID (user_id)' : 'Укажите Chat ID');
+    const platformKeyEarly: 'telegram' | 'max' = isTelegram ? 'telegram' : 'max';
+    const testChatId = (getTestChatId(platformKeyEarly) || '').trim();
+    if (!testChatId) {
+      toast.error(isMax ? 'Укажите Chat ID (user_id) в настройках' : 'Укажите Chat ID в настройках');
+      setSettingsOpen(true);
       return;
     }
     if (message.mediaType === 'album') {
@@ -125,7 +128,7 @@ export default function JsonPanel() {
       } else {
         const payload = JSON.parse(body);
         const { data, error } = await supabase.functions.invoke('max-send', {
-          body: { token, chatId: message.chatId.trim(), payload },
+          body: { token, chatId: testChatId, payload },
         });
         if (error) {
           toast.error(`MAX: ${error.message}`);
