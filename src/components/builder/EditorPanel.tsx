@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HtmlCodeEditor from './HtmlCodeEditor';
@@ -27,7 +27,14 @@ export default function EditorPanel() {
     const selected = message.text.substring(start, end);
 
     let wrapped = '';
-    if (tag === 'quote') {
+    if (tag === 'heading') {
+      if (message.parseMode === 'HTML') {
+        wrapped = `<h2>${selected || 'Заголовок'}</h2>`;
+      } else {
+        const src = selected || 'Заголовок';
+        wrapped = src.split('\n').map(l => `# ${l}`).join('\n');
+      }
+    } else if (tag === 'quote') {
       // Quote: prefix every line with "> "
       if (message.parseMode === 'HTML') {
         wrapped = `<blockquote>${selected || 'Цитата'}</blockquote>`;
@@ -312,6 +319,7 @@ export default function EditorPanel() {
               { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
               { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
               { tag: 'link', icon: Link, title: 'Ссылка' },
+              { tag: 'heading', icon: Heading, title: 'Заголовок' },
               { tag: 'quote', icon: Quote, title: 'Цитата' },
             ].map(({ tag, icon: Icon, title }) => (
               <button
@@ -340,8 +348,10 @@ export default function EditorPanel() {
             onChange={e => updateField('text', e.target.value)}
             placeholder={
               message.parseMode === 'MarkdownV2'
-                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
-                : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
+                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n# Заголовок\n> Цитата'
+                : message.parseMode === 'Markdown'
+                  ? '**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ `код`\n[ссылка](https://...)\n# Заголовок\n> Цитата'
+                  : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
           />
