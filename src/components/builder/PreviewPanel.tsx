@@ -64,20 +64,31 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
       return html;
     };
 
-    // Group consecutive "> " lines into blockquotes (markdown only)
+    // Group consecutive "> " lines into blockquotes; render headings (markdown only)
     if ((message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown')) {
       const lines = text.split('\n');
-      const groups: { quote: boolean; lines: string[] }[] = [];
+      type Block = { kind: 'quote'; lines: string[] } | { kind: 'text'; lines: string[] } | { kind: 'h'; level: number; content: string };
+      const blocks: Block[] = [];
       for (const ln of lines) {
+        const hMatch = /^(#{1,3})\s+(.*)$/.exec(ln);
+        if (hMatch) {
+          blocks.push({ kind: 'h', level: hMatch[1].length, content: hMatch[2] });
+          continue;
+        }
         const isQuote = /^>\s?/.test(ln);
         const content = isQuote ? ln.replace(/^>\s?/, '') : ln;
-        const last = groups[groups.length - 1];
-        if (last && last.quote === isQuote) last.lines.push(content);
-        else groups.push({ quote: isQuote, lines: [content] });
+        const last = blocks[blocks.length - 1];
+        const targetKind = isQuote ? 'quote' : 'text';
+        if (last && (last.kind === targetKind)) (last as { lines: string[] }).lines.push(content);
+        else blocks.push({ kind: targetKind, lines: [content] } as Block);
       }
-      const out = groups.map(g => {
-        const inner = renderInline(g.lines.join('\n'));
-        return g.quote
+      const out = blocks.map(b => {
+        if (b.kind === 'h') {
+          const sizeCls = b.level === 1 ? 'text-lg font-bold' : b.level === 2 ? 'text-base font-bold' : 'text-sm font-semibold';
+          return `<div class="${sizeCls} my-1">${renderInline(b.content)}</div>`;
+        }
+        const inner = renderInline(b.lines.join('\n'));
+        return b.kind === 'quote'
           ? `<blockquote class="border-l-2 border-primary pl-2 my-1 text-muted-foreground italic">${inner}</blockquote>`
           : inner;
       }).join('');
