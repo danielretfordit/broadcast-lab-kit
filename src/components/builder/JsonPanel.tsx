@@ -112,8 +112,6 @@ export default function JsonPanel() {
     try {
       if (isTelegram) {
         const parsed = JSON.parse(body);
-        // Override chat_id with value from settings
-        parsed.chat_id = testChatId;
         const method = getTelegramMethod(message);
         const url = `https://api.telegram.org/bot${token}/${method}`;
         const res = await fetch(url, {

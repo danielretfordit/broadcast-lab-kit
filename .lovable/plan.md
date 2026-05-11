@@ -1,51 +1,47 @@
 ## Изменения
 
-### 1) Корректное превью MAX-форматирования (PreviewPanel.tsx)
+### 1) Перенос Chat ID в настройки тестовой отправки
 
-Добавить поддержку **заголовков** `# заголовок` (отдельная line-level обработка для MAX и Telegram), уточнить порядок подстановок и сохранить уже работающие правила:
+**`src/components/builder/EditorPanel.tsx`** — удалить блок «Chat ID» (строки 292–304). Логика JSON не зависит от UI этого поля (в `buildJson` `chat_id` не пишется), поэтому сборка JSON остаётся без изменений.
 
-В `renderText` (для `parseMode === 'Markdown'` и `'MarkdownV2'`):
-- Перед группировкой строк по `>` (цитаты) выделять строки, начинающиеся с `# ` / `## ` / `### `, и оборачивать в `<h1/h2/h3>` со стилями (`text-lg font-bold`, и т.п.).
-- В inline-обработке для MAX оставить порядок: ссылки → код → `**bold**` → `__bold__` → `++u++` → `~~s~~` → `*em*` → `_em_`.
-- Для @упоминаний `[Имя](max://user/123)` — рендерить как обычную ссылку (без перехода), стиль primary-цвет.
+**`src/components/builder/BotSettingsDialog.tsx`** — добавить поле «Chat ID для теста»:
+- Хранить в `sessionStorage` по ключу `bot-settings:chatId:<platform>`.
+- Экспортировать `getTestChatId(platform)` рядом с `getBotToken`.
+- Поле подписать: для Telegram — «Chat ID», для MAX — «Chat ID (user_id для теста)».
 
-Дополнительно в **EditorPanel** `insertFormatting`:
-- Добавить кнопку «Заголовок» (`Heading` icon) — вставляет `# ` в начале строки.
-- Подсказка-плейсхолдер для MAX: пример с `**жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\` # Заголовок > Цитата`.
+**`src/contexts/MessageContext.tsx`** — поле `chatId` остаётся в `MessageData` (используется в `handleTest`), но теперь синхронизируется из настроек: при открытии/использовании теста `JsonPanel` подставляет `chatId` из `getTestChatId`.
 
-### 2) Test send в Telegram использует Chat ID из настроек (JsonPanel.tsx)
+**`src/components/builder/JsonPanel.tsx`** (`handleTest`):
+- Брать `chatId` через `getTestChatId(platformKey)` вместо `message.chatId`.
+- Если пусто — `toast.error` и открыть `BotSettingsDialog`.
+- Удалить зависимость от `message.chatId` для валидации.
 
-Сейчас `body` берётся из `generatedJson`, в котором `chat_id` = `<CHAT_ID>` (поле в редакторе удалено). Перед отправкой:
-- Для **Telegram**: `JSON.parse(body)` → `parsed.chat_id = testChatId` → отправлять.
-- Для **Album** (`media[]`) `chat_id` тоже находится на верхнем уровне — тот же подход работает.
-- Для **MAX**: `chat_id` уже передаётся через query параметр в edge функцию `max-send`, тут ничего менять не нужно.
+### 2) Спиннер при сохранении шаблона
 
-### 3) Блокировка кнопки «Сохранить в проект» при пустом шаблоне (PreviewPanel.tsx)
+**`src/components/builder/PreviewPanel.tsx`** (`handleSaveToProject`, кнопка «Сохранить в проект»):
+- Добавить `const [saving, setSaving] = useState(false)`.
+- Обернуть запрос в `try/finally` с `setSaving(true/false)`.
+- В кнопке: `disabled={saveDisabled || saving}`, иконка — `<Loader2 className="animate-spin" />` пока `saving`, иначе `<Save />`. Текст: «Сохранение...» / прежний текст.
 
-Расширить `saveDisabled`:
-- Для **HTML**: пустые `subject` ИЛИ `text` → disabled.
-- Для **Telegram/MAX**: пустой `text` И отсутствует медиа (или альбом без валидных URL) → disabled. То есть шаблон считается «пустым», если нет ни текста, ни валидного медиа.
-- Текущая проверка `mediaInvalid` сохраняется (нельзя сохранить с указанным типом медиа без URL).
+### 3) Заблокированные каналы в шапке
 
-Логика:
-```ts
-const textEmpty = !message.text.trim();
-const hasValidMedia =
-  (message.mediaType !== 'none' && message.mediaType !== 'album' && !!message.mediaUrl.trim()) ||
-  (isAlbum && albumUrls.length >= 2);
-const emptyTemplate = isHtml
-  ? (!message.subject.trim() || textEmpty)
-  : (textEmpty && !hasValidMedia);
-const saveDisabled = mediaInvalid || emptyTemplate;
-```
+**`src/components/builder/AppHeader.tsx`** (массив `platforms` и рендер табов каналов):
+- После Email добавить четыре «disabled» кнопки: Viber, Viber Business, WhatsApp, SMS.
+- Использовать иконки `lucide-react`: `MessageCircle` (Viber), `Briefcase` (Viber Business), `MessageSquare` (WhatsApp), `Smartphone` (SMS).
+- На каждой кнопке: иконка канала + маленькая `Lock` (замочек) + `Coins` (монетка, платный канал) в правом верхнем углу.
+- Стили: серый фон (`bg-muted/40 text-muted-foreground/50`), `cursor-not-allowed`, `disabled`, без обработчика клика.
+- Тултип «В разработке • Платный канал».
 
-Текст кнопки/`title`:
-- если `emptyTemplate` → «Заполните шаблон для сохранения»
-- иначе если `mediaInvalid` → «Заполните медиа для сохранения»
-- иначе «Сохранить в проект»
+### Технические детали
+
+- `chatId` остаётся в типе `MessageData`, но больше не отображается в редакторе. Это не нарушает контракт `buildJson`, т.к. он не использует `chatId` (только `handleTest`).
+- В `JsonPanel.handleTest` источник `chatId` меняется с `message.chatId` на `sessionStorage`-значение через `getTestChatId(platform)`.
+- Новые кнопки каналов чисто декоративные — никакой `Platform` тип не расширяется.
 
 ### Файлы
 
-- `src/components/builder/PreviewPanel.tsx` — заголовки в превью + расширенная валидация.
-- `src/components/builder/EditorPanel.tsx` — кнопка «Заголовок» в тулбаре, плейсхолдер для MAX.
-- `src/components/builder/JsonPanel.tsx` — подмена `chat_id` из настроек при тестовой отправке Telegram.
+- `src/components/builder/EditorPanel.tsx`
+- `src/components/builder/JsonPanel.tsx`
+- `src/components/builder/BotSettingsDialog.tsx`
+- `src/components/builder/PreviewPanel.tsx`
+- `src/components/builder/AppHeader.tsx`
