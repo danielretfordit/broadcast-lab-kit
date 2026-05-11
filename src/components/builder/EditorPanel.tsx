@@ -348,8 +348,10 @@ export default function EditorPanel() {
             onChange={e => updateField('text', e.target.value)}
             placeholder={
               message.parseMode === 'MarkdownV2'
-                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
-                : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
+                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n# Заголовок\n> Цитата'
+                : message.parseMode === 'Markdown'
+                  ? '**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ `код`\n[ссылка](https://...)\n# Заголовок\n> Цитата'
+                  : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
           />
