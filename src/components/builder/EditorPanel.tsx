@@ -27,7 +27,14 @@ export default function EditorPanel() {
     const selected = message.text.substring(start, end);
 
     let wrapped = '';
-    if (tag === 'quote') {
+    if (tag === 'heading') {
+      if (message.parseMode === 'HTML') {
+        wrapped = `<h2>${selected || 'Заголовок'}</h2>`;
+      } else {
+        const src = selected || 'Заголовок';
+        wrapped = src.split('\n').map(l => `# ${l}`).join('\n');
+      }
+    } else if (tag === 'quote') {
       // Quote: prefix every line with "> "
       if (message.parseMode === 'HTML') {
         wrapped = `<blockquote>${selected || 'Цитата'}</blockquote>`;
