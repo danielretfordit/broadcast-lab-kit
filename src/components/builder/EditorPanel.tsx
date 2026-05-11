@@ -319,6 +319,7 @@ export default function EditorPanel() {
               { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
               { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
               { tag: 'link', icon: Link, title: 'Ссылка' },
+              { tag: 'heading', icon: Heading, title: 'Заголовок' },
               { tag: 'quote', icon: Quote, title: 'Цитата' },
             ].map(({ tag, icon: Icon, title }) => (
               <button
