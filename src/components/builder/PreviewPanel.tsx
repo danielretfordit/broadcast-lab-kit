@@ -296,16 +296,25 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
       {/* Save button footer */}
       {!viewOnly && (
         <div className="px-4 py-3 border-t border-border">
-          <button
-            type="button"
-            onClick={handleSaveToProject}
-            disabled={saveDisabled || saving}
-            title={saveDisabled ? 'Заполните все ссылки на медиа перед сохранением' : ''}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
-          >
-            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            {saving ? 'Сохранение...' : saveDisabled ? 'Заполните медиа для сохранения' : 'Сохранить в проект'}
-          </button>
+          {(() => {
+            const disabledLabel = emptyTemplate
+              ? 'Заполните шаблон для сохранения'
+              : mediaInvalid
+                ? 'Заполните медиа для сохранения'
+                : 'Сохранить в проект';
+            return (
+              <button
+                type="button"
+                onClick={handleSaveToProject}
+                disabled={saveDisabled || saving}
+                title={saveDisabled ? disabledLabel : ''}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
+              >
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                {saving ? 'Сохранение...' : disabledLabel}
+              </button>
+            );
+          })()}
         </div>
       )}
     </div>
