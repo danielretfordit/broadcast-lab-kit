@@ -18,11 +18,19 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const [saving, setSaving] = useState(false);
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
+  const isHtmlPlatform = message.platform === 'html';
   const mediaInvalid =
-    message.platform !== 'html' &&
+    !isHtmlPlatform &&
     ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2));
-  const saveDisabled = mediaInvalid;
+  const textEmpty = !message.text.trim();
+  const hasValidMedia =
+    (message.mediaType !== 'none' && message.mediaType !== 'album' && !!message.mediaUrl.trim()) ||
+    (isAlbum && albumUrls.length >= 2);
+  const emptyTemplate = isHtmlPlatform
+    ? (!message.subject.trim() || textEmpty)
+    : (textEmpty && !hasValidMedia);
+  const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
