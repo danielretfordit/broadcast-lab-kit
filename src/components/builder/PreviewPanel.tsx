@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { ExternalLink, Save, Loader2 } from 'lucide-react';
+import { ExternalLink, Save, Loader2, MoreVertical, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
 import { buildJson } from '@/lib/message-builder';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
