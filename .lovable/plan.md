@@ -1,51 +1,52 @@
-## Изменения
+## Сохранение коллекции шаблонов всех каналов
 
-### 1) Корректное превью MAX-форматирования (PreviewPanel.tsx)
+Рядом с кнопкой «Сохранить в проект» — кнопка «…» с пунктом «Сохранить все шаблоны». Открывает модалку со списком шаблонов всех платформ (telegram / max / html), где можно отметить какие отправлять, и одним POST'ом отправить коллекцию.
 
-Добавить поддержку **заголовков** `# заголовок` (отдельная line-level обработка для MAX и Telegram), уточнить порядок подстановок и сохранить уже работающие правила:
+### 1. Источник данных по всем платформам
+- Drafts хранятся в `localStorage` по ключу `omni-builder-draft:<platform>` (см. `MessageContext.tsx`).
+- Активная платформа — берём `message` из `useMessage()` (актуальнее localStorage из-за 300ms debounce).
+- Остальные — читаем напрямую через хелпер `loadDraft(platform)` (вынесем экспорт из `MessageContext.tsx` или продублируем минимальный читатель в новом файле).
+- Заполненность определяем теми же правилами, что в `PreviewPanel` (`emptyTemplate` + `mediaInvalid`):
+  - `html`: `subject` и `text` непусты;
+  - `telegram` / `max`: `text` непуст ИЛИ есть валидное медиа (одиночный `mediaUrl` или `album` ≥2 url) и нет `mediaInvalid`.
 
-В `renderText` (для `parseMode === 'Markdown'` и `'MarkdownV2'`):
-- Перед группировкой строк по `>` (цитаты) выделять строки, начинающиеся с `# ` / `## ` / `### `, и оборачивать в `<h1/h2/h3>` со стилями (`text-lg font-bold`, и т.п.).
-- В inline-обработке для MAX оставить порядок: ссылки → код → `**bold**` → `__bold__` → `++u++` → `~~s~~` → `*em*` → `_em_`.
-- Для @упоминаний `[Имя](max://user/123)` — рендерить как обычную ссылку (без перехода), стиль primary-цвет.
+### 2. UI: кнопка «…» рядом с «Сохранить в проект»
+- В футере `PreviewPanel.tsx` основная кнопка получает `flex-1`, рядом квадратная иконка-кнопка `MoreVertical`.
+- По клику — `DropdownMenu` (shadcn) с пунктом «Сохранить все шаблоны» (иконка `Layers`).
+- Пункт открывает `Dialog` (shadcn).
+- В `viewOnly` режиме кнопку «…» не показываем.
 
-Дополнительно в **EditorPanel** `insertFormatting`:
-- Добавить кнопку «Заголовок» (`Heading` icon) — вставляет `# ` в начале строки.
-- Подсказка-плейсхолдер для MAX: пример с `**жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\` # Заголовок > Цитата`.
+### 3. Модалка «Сохранить все шаблоны»
+- Заголовок: «Сохранить все шаблоны». Подзаголовок: «Будут отправлены выбранные шаблоны единой коллекцией».
+- Таблица из 3 строк (Telegram / MAX / HTML), без превью:
+  - «Канал» — иконка + название;
+  - «Статус» — пилюля: зелёная `CheckCircle2 Заполнен` либо серая `XCircle Пусто`;
+  - «Включить» — `Checkbox`. По умолчанию все ВКЛЮЧЕНЫ; для пустых — снят и `disabled`.
+- Снизу: «Выбрано: N из M».
+- Кнопки: «Отмена» и «Сохранить выбранные шаблоны» (primary, disabled при 0 выбранных, лоадер при отправке).
 
-### 2) Test send в Telegram использует Chat ID из настроек (JsonPanel.tsx)
+### 4. Отправка
+- Тот же эндпоинт: `POST /api/saveTemplate/?guid=<guid>`.
+- Тело — JSON c единственным полем `json`, содержащим коллекцию выбранных платформ:
+  ```json
+  {
+    "json": {
+      "telegram": <buildTelegramJson(draftTelegram)>,
+      "max":      <buildMaxJson(draftMax)>,
+      "html":     <buildEmailJson(draftHtml)>
+    }
+  }
+  ```
+  Невыбранные/пустые ключи опускаются (не `null`).
+- Toast-успех/ошибка по аналогии с существующим `handleSaveToProject`.
 
-Сейчас `body` берётся из `generatedJson`, в котором `chat_id` = `<CHAT_ID>` (поле в редакторе удалено). Перед отправкой:
-- Для **Telegram**: `JSON.parse(body)` → `parsed.chat_id = testChatId` → отправлять.
-- Для **Album** (`media[]`) `chat_id` тоже находится на верхнем уровне — тот же подход работает.
-- Для **MAX**: `chat_id` уже передаётся через query параметр в edge функцию `max-send`, тут ничего менять не нужно.
+### 5. Файлы
+- `src/components/builder/PreviewPanel.tsx` — добавить кнопку «…», dropdown, открытие модалки.
+- `src/components/builder/SaveAllTemplatesDialog.tsx` (новый) — модалка с таблицей, чекбоксами, отправкой.
+- `src/contexts/MessageContext.tsx` — экспортировать `loadDraft` для чтения других платформ без переключения активной.
 
-### 3) Блокировка кнопки «Сохранить в проект» при пустом шаблоне (PreviewPanel.tsx)
-
-Расширить `saveDisabled`:
-- Для **HTML**: пустые `subject` ИЛИ `text` → disabled.
-- Для **Telegram/MAX**: пустой `text` И отсутствует медиа (или альбом без валидных URL) → disabled. То есть шаблон считается «пустым», если нет ни текста, ни валидного медиа.
-- Текущая проверка `mediaInvalid` сохраняется (нельзя сохранить с указанным типом медиа без URL).
-
-Логика:
-```ts
-const textEmpty = !message.text.trim();
-const hasValidMedia =
-  (message.mediaType !== 'none' && message.mediaType !== 'album' && !!message.mediaUrl.trim()) ||
-  (isAlbum && albumUrls.length >= 2);
-const emptyTemplate = isHtml
-  ? (!message.subject.trim() || textEmpty)
-  : (textEmpty && !hasValidMedia);
-const saveDisabled = mediaInvalid || emptyTemplate;
-```
-
-Текст кнопки/`title`:
-- если `emptyTemplate` → «Заполните шаблон для сохранения»
-- иначе если `mediaInvalid` → «Заполните медиа для сохранения»
-- иначе «Сохранить в проект»
-
-### Файлы
-
-- `src/components/builder/PreviewPanel.tsx` — заголовки в превью + расширенная валидация.
-- `src/components/builder/EditorPanel.tsx` — кнопка «Заголовок» в тулбаре, плейсхолдер для MAX.
-- `src/components/builder/JsonPanel.tsx` — подмена `chat_id` из настроек при тестовой отправке Telegram.
+### Технические детали
+- Платформы `['telegram','max','html']` с лейблами и иконками (Telegram svg, max-logo, `Mail` для HTML).
+- Активная платформа в модалке всегда читается из `useMessage()`; остальные — из localStorage.
+- Сборка JSON через существующие `buildTelegramJson` / `buildMaxJson` / `buildEmailJson`.
+- Локальный `useState` для открытия модалки и `savingAll` для лоадера.

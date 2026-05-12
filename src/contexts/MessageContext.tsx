@@ -13,7 +13,7 @@ function storageKey(platform: Platform) {
   return `${STORAGE_PREFIX}${platform}`;
 }
 
-function loadDraft(platform: Platform): MessageData {
+export function loadDraft(platform: Platform): MessageData {
   try {
     const raw = localStorage.getItem(storageKey(platform));
     if (raw) {
