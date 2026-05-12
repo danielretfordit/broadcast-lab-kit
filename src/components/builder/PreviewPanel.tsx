@@ -18,6 +18,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const { message } = useMessage();
   const [searchParams] = useSearchParams();
   const [saving, setSaving] = useState(false);
+  const [saveAllOpen, setSaveAllOpen] = useState(false);
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
