@@ -306,18 +306,38 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 ? 'Заполните медиа для сохранения'
                 : 'Сохранить в проект';
             return (
-              <button
-                type="button"
-                onClick={handleSaveToProject}
-                disabled={saveDisabled || saving}
-                title={saveDisabled ? disabledLabel : ''}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
-              >
-                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                {saving ? 'Сохранение...' : disabledLabel}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveToProject}
+                  disabled={saveDisabled || saving}
+                  title={saveDisabled ? disabledLabel : ''}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
+                >
+                  {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                  {saving ? 'Сохранение...' : disabledLabel}
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Дополнительно"
+                      className="h-[42px] w-[42px] flex items-center justify-center rounded-lg border border-border bg-background hover:bg-muted transition-colors"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => setSaveAllOpen(true)}>
+                      <Layers size={14} className="mr-2" />
+                      Сохранить все шаблоны
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             );
           })()}
+          <SaveAllTemplatesDialog open={saveAllOpen} onOpenChange={setSaveAllOpen} />
         </div>
       )}
     </div>
