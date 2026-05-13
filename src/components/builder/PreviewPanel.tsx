@@ -55,7 +55,17 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               : (textEmpty || smsEmpty))
         : isViberBotPlatform
           ? (textEmpty && !hasValidMedia)
-          : (textEmpty && !hasValidMedia);
+          : isWhatsAppPlatform
+            ? (() => {
+                const buttons = (message.buttonRows[0]?.buttons || []).filter(b => (b.text || '').trim());
+                if (buttons.length > 0) {
+                  if (buttons.length > 3) return true;
+                  return textEmpty;
+                }
+                if (message.mediaType !== 'none') return !message.mediaUrl.trim();
+                return textEmpty;
+              })()
+            : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
