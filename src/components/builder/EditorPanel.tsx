@@ -176,13 +176,20 @@ export default function EditorPanel() {
           { id: 'none' as const, icon: null, label: 'Нет' },
           { id: 'photo' as const, icon: Image, label: 'Фото' },
         ]
-      : [
-          { id: 'none' as const, icon: null, label: 'Нет' },
-          { id: 'photo' as const, icon: Image, label: 'Фото' },
-          { id: 'video' as const, icon: Video, label: 'Видео' },
-          { id: 'document' as const, icon: FileText, label: 'Файл' },
-          { id: 'album' as const, icon: Images, label: 'Альбом' },
-        ];
+      : isWhatsApp
+        ? [
+            { id: 'none' as const, icon: null, label: 'Нет' },
+            { id: 'photo' as const, icon: Image, label: 'Фото' },
+            { id: 'video' as const, icon: Video, label: 'Видео' },
+            { id: 'document' as const, icon: FileText, label: 'Файл' },
+          ]
+        : [
+            { id: 'none' as const, icon: null, label: 'Нет' },
+            { id: 'photo' as const, icon: Image, label: 'Фото' },
+            { id: 'video' as const, icon: Video, label: 'Видео' },
+            { id: 'document' as const, icon: FileText, label: 'Файл' },
+            { id: 'album' as const, icon: Images, label: 'Альбом' },
+          ];
 
   const updateAlbumUrl = (idx: number, value: string) => {
     const next = [...albumUrls];
