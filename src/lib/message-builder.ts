@@ -14,6 +14,32 @@ export interface ButtonRow {
   buttons: InlineButton[];
 }
 
+export type ViberKbActionType = 'reply' | 'open-url' | 'share-phone' | 'location-picker';
+export type ViberKbTextSize = 'small' | 'regular' | 'large';
+export type ViberKbAlignH = 'left' | 'center' | 'right';
+export type ViberKbAlignV = 'top' | 'middle' | 'bottom';
+
+export interface ViberKbButton {
+  id: string;
+  text: string;
+  columns: number; // 1..6
+  rows: number; // 1..2
+  actionType: ViberKbActionType;
+  actionBody: string;
+  textSize: ViberKbTextSize;
+  textHAlign: ViberKbAlignH;
+  textVAlign: ViberKbAlignV;
+}
+
+export interface ViberKbRow {
+  id: string;
+  buttons: ViberKbButton[];
+}
+
+export interface ViberKeyboard {
+  rows: ViberKbRow[];
+}
+
 export interface MessageData {
   platform: Platform;
   chatId: string;
@@ -28,6 +54,24 @@ export interface MessageData {
   viberRoute?: string;
   viberBotSenderName?: string;
   viberBotTrackingData?: string;
+  viberKeyboard?: ViberKeyboard;
+}
+
+export const VIBER_BTN_BG = '#ffa000';
+export const VIBER_KB_BG = '#ffffff';
+
+export function createEmptyViberButton(): ViberKbButton {
+  return {
+    id: generateId(),
+    text: 'Кнопка',
+    columns: 6,
+    rows: 1,
+    actionType: 'reply',
+    actionBody: 'reply',
+    textSize: 'regular',
+    textHAlign: 'center',
+    textVAlign: 'middle',
+  };
 }
 
 export function generateId(): string {
