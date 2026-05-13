@@ -14,7 +14,8 @@ export default function EditorPanel() {
   const [showAi, setShowAi] = useState(false);
 
   const isHtml = message.platform === 'html';
-  const isViber = message.platform === 'viber';
+  const isViber = message.platform === 'viber_business';
+  const isViberBot = message.platform === 'viber_bot';
   const isMax = message.platform === 'max';
   const isSms = message.platform === 'sms';
   const isAlbum = message.mediaType === 'album';
@@ -53,7 +54,7 @@ export default function EditorPanel() {
       }
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
       const isMaxSyntax = message.platform === 'max';
-      const isViberSyntax = message.platform === 'viber';
+      const isViberSyntax = message.platform === 'viber_business' || message.platform === 'viber_bot';
       if (tag === 'bold') wrapped = isMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = isMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
       else if (tag === 'underline') wrapped = isMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
