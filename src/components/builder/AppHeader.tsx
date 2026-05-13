@@ -21,11 +21,26 @@ type PlatformTab = {
   iconColor?: string;
 };
 
-function ViberIcon({ className }: { className?: string }) {
+function ViberBrandIcon({ className }: { className?: string }) {
+  // Official Viber-style brand mark (purple phone)
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M19.78 14.43c-.36 2.84-2.46 3.02-2.85 3.14-.16.05-1.66.42-3.55-.84a31.5 31.5 0 0 1-3.27-2.51 18 18 0 0 1-2.42-2.95c-.83-1.27-1.4-2.7-1.43-2.79a3.94 3.94 0 0 1-.05-2.62c.34-.86 1.05-1.16 1.36-1.27.3-.1.59-.06.78.05.27.16.86.86 1.45 1.79.27.43.51.92.4 1.27-.1.34-.43.6-.7.86-.28.27-.45.46-.32.74.12.27.6.99 1.31 1.62.91.81 1.66 1.05 1.94 1.18.27.13.45-.02.65-.27.2-.24.55-.65.85-.85.3-.2.55-.18.84-.07.3.11 1.92.91 2.25 1.07.34.16.56.24.64.38.08.14.08.8-.18 1.57z"/>
-      <path d="M12 1.5c-5.8 0-9.46 4.4-9.5 8.78a8.4 8.4 0 0 0 1.32 4.84l-.86 3.16 3.27-.86A9.07 9.07 0 0 0 12 18.78c5.8 0 9.5-4.4 9.5-8.5S17.8 1.5 12 1.5zm5.4 12.66a3.65 3.65 0 0 1-2.66 1.94l-.78.18a13 13 0 0 1-3.36-1c-3.42-1.49-5.5-4.96-5.66-5.18-.16-.22-1.32-1.74-1.32-3.32 0-1.58.83-2.36 1.13-2.68.3-.32.65-.4.86-.4l.62.01c.2.01.46-.07.72.55.27.65.92 2.25.99 2.4.07.16.13.34.02.55-.1.22-.16.35-.31.54-.16.18-.33.4-.47.54-.16.16-.32.32-.14.62.18.3.81 1.34 1.74 2.16 1.2 1.07 2.2 1.4 2.5 1.55.3.16.48.13.66-.07.18-.2.76-.88.96-1.18.2-.3.4-.25.67-.15.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.13.07.74-.18 1.45-.27.7-1.5 1.4-2.05 1.46-.55.07-.6.11-3.66-1.42-3.6-1.78-5.86-5.55-6.04-5.79-.18-.24-1.43-1.9-1.43-3.62 0-1.71.9-2.55 1.21-2.9.32-.34.7-.43.94-.43.23 0 .45 0 .65.01" fill="none"/>
+    <svg viewBox="0 0 512 512" fill="currentColor" className={className} aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="22" d="M269 186a30 30 0 0 1 31 31m-38-58a64 64 0 0 1 64 67m-73-93a97 97 0 0 1 99 104"/>
+      <path d="M288 274q10-13 24-4l36 27q8 10-7 28t-28 15q-53-12-102-60t-61-104q0-20 25-34 13-9 22 5l25 35q6 12-7 22c-39 15 51 112 73 70zM95 232c0 78 14 95 36 118 7 7 32 19 38 19v69c0 4 4 7 8 3l53-63 26 1c144 0 161-56 161-147S400 85 256 85 95 141 95 232zm-30 0c0-126 55-177 191-177s191 51 191 177-55 177-191 177c-10 0-18 0-32-2l-38 43c-7 8-28 11-28-13v-42c-6 0-20-6-39-18-19-13-54-44-54-145z"/>
+    </svg>
+  );
+}
+
+function ViberBusinessIcon({ className }: { className?: string }) {
+  // Chat-bubble with dots — Viber Business / SMS hybrid channel
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        fill="currentColor"
+        d="M4.68015 14.1433C4.27146 12.401 4.27146 10.5878 4.68015 8.84544C5.21759 6.55423 7.00659 4.76524 9.29781 4.2278C11.0401 3.81911 12.8533 3.81911 14.5957 4.2278C16.8869 4.76524 18.6759 6.55423 19.2133 8.84544C19.622 10.5878 19.622 12.401 19.2133 14.1433C18.6759 16.4345 16.8869 18.2235 14.5957 18.7609C13.4799 19.0226 12.3275 19.1031 11.1969 19.0024L7.93146 21.0489C7.16336 21.5293 6.16574 20.9128 6.27306 20.0124L6.61117 17.1758C5.6328 16.4276 4.96693 15.3554 4.68015 14.1433ZM8.36173 9.79516C8.36173 9.38095 8.69752 9.04516 9.11173 9.04516H12.1676C12.5818 9.04516 12.9176 9.38095 12.9176 9.79516C12.9176 10.2094 12.5818 10.5452 12.1676 10.5452H9.11173C8.69752 10.5452 8.36173 10.2094 8.36173 9.79516ZM10.1304 12.101C9.71614 12.101 9.38035 12.4368 9.38035 12.851C9.38035 13.2652 9.71614 13.601 10.1304 13.601H15.2235C15.6377 13.601 15.9735 13.2652 15.9735 12.851C15.9735 12.4368 15.6377 12.101 15.2235 12.101H10.1304Z"
+      />
     </svg>
   );
 }
@@ -33,7 +48,7 @@ function ViberIcon({ className }: { className?: string }) {
 const platforms: PlatformTab[] = [
   { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
   { id: 'max', label: 'MAX', logo: maxLogo },
-  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberIcon, iconColor: '#7360F2' },
+  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2' },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
@@ -240,7 +255,7 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
 
           {/* Disabled channels */}
           {([
-            { id: 'viber-personal', label: 'Viber', Icon: ViberIcon, paid: false },
+            { id: 'viber-personal', label: 'Viber', Icon: ViberBrandIcon, paid: false },
             { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
