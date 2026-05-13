@@ -210,7 +210,26 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {/* Media */}
+      {/* Viber: Route (first) */}
+      {isViber && (
+        <section>
+          <label className="section-label">Маршрут отправки</label>
+          <select
+            value={viberRoute}
+            onChange={e => updateField('viberRoute', e.target.value)}
+            className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+          >
+            <option value="viber(60)-sms">viber(60)-sms — Viber, через 60 сек SMS</option>
+            <option value="viber(30)-sms">viber(30)-sms — Viber, через 30 сек SMS</option>
+            <option value="viber-only">viber-only — только Viber</option>
+            <option value="sms-only">sms-only — только SMS</option>
+          </select>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Провайдер сам выберет канал доставки и при недоставке Viber переключится на SMS.
+          </p>
+        </section>
+      )}
+
       {!isHtml && (
         <section>
           <label className="section-label">Медиа контент</label>
