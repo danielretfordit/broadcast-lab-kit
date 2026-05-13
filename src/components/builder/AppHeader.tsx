@@ -19,6 +19,8 @@ type PlatformTab = {
   CustomIcon?: React.FC<{ className?: string }>;
   iconBg?: string;
   iconColor?: string;
+  iconClassName?: string;
+  paid?: boolean;
 };
 
 function ViberBrandIcon({ className }: { className?: string }) {
@@ -48,7 +50,7 @@ function ViberBusinessIcon({ className }: { className?: string }) {
 const platforms: PlatformTab[] = [
   { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
   { id: 'max', label: 'MAX', logo: maxLogo },
-  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2' },
+  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
@@ -243,12 +245,13 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                   <img src={p.logo} alt={p.label} className="w-4 h-4" />
                 ) : p.CustomIcon ? (
                   <span style={p.iconColor ? { color: p.iconColor } : undefined}>
-                    <p.CustomIcon className="w-4 h-4" />
+                    <p.CustomIcon className={p.iconClassName ?? 'w-4 h-4'} />
                   </span>
                 ) : p.icon ? (
                   <p.icon size={14} />
                 ) : null}
                 {p.label}
+                {p.paid && !isLocked && <Coins size={10} className="text-amber-500/80 ml-0.5" />}
               </button>
             );
           })}
@@ -257,6 +260,7 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
           {([
             { id: 'viber-personal', label: 'Viber', Icon: ViberBrandIcon, paid: false },
             { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
+            { id: 'sms', label: 'SMS', Icon: SmsIcon, paid: true },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
               <TooltipTrigger asChild>
