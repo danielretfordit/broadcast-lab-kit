@@ -20,6 +20,7 @@ export default function JsonPanel() {
   const generatedJson = JSON.stringify(buildJson(message), null, 2);
   const isTelegram = message.platform === 'telegram';
   const isMax = message.platform === 'max';
+  const isViber = message.platform === 'viber';
 
   useEffect(() => {
     if (!editMode) {
@@ -76,6 +77,10 @@ export default function JsonPanel() {
   };
 
   const handleTest = async () => {
+    if (isViber) {
+      toast.info('Тестовая отправка для Viber/SMS пока недоступна');
+      return;
+    }
     if (!validation.valid) {
       toast.error('Сначала исправьте ошибки в JSON');
       return;
@@ -157,7 +162,7 @@ export default function JsonPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-            JSON {isTelegram ? '(Telegram)' : '(MAX)'}
+            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : '(MAX)'}
           </h3>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
             validation.valid
@@ -255,10 +260,10 @@ export default function JsonPanel() {
       {/* Footer info */}
       <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
         <span>
-          {isTelegram ? 'Telegram Bot API' : 'MAX API'} • {message.parseMode}
+          {isTelegram ? 'Telegram Bot API' : isViber ? 'Viber/SMS Provider' : 'MAX API'} • {message.parseMode}
         </span>
         <span>
-          {isTelegram ? getTelegramMethod(message) : 'messages/send'}
+          {isTelegram ? getTelegramMethod(message) : isViber ? `route: ${message.viberRoute || 'viber(60)-sms'}` : 'messages/send'}
         </span>
       </div>
 
