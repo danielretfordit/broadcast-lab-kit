@@ -191,7 +191,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               }`}>
                 {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
                 {isViber && <MessageSquare size={14} className="text-white" />}
-                {isViberBot && <span className="text-white text-[11px] font-bold">V</span>}
+                {isViberBot && <ViberBrandIcon className="w-4 h-4 text-white" />}
                 {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
               </div>
               <div>
