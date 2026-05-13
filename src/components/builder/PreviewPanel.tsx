@@ -44,7 +44,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           ? smsEmpty
           : viberRoute === 'viber-only'
             ? textEmpty
-            : (textEmpty && smsEmpty))
+            : (textEmpty || smsEmpty))
       : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
@@ -240,7 +240,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 </div>
               )}
 
-              <div className="px-4 py-3 text-sm leading-relaxed text-foreground">
+              <div className="px-4 py-3 text-sm leading-relaxed text-foreground break-words [overflow-wrap:anywhere]">
                 {renderText(message.text)}
                 {!viewOnly && (
                   <div className="text-right mt-2">
@@ -314,7 +314,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       {info.len} симв. • {info.parts} SMS
                     </span>
                   </div>
-                  <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap min-h-[48px]">
+                  <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap break-all [overflow-wrap:anywhere] min-h-[48px]">
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
                   <p className="mt-1.5 text-[10px] text-muted-foreground">
