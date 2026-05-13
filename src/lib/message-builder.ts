@@ -316,10 +316,39 @@ export function parseEmailJson(parsed: Record<string, unknown>): Partial<Message
   };
 }
 
+export function parseViberJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const result: Partial<MessageData> = {
+    text: typeof parsed.message === 'string' ? parsed.message : '',
+    smsText: typeof parsed.param_sms === 'string' ? parsed.param_sms : '',
+    viberRoute: typeof parsed.route === 'string' ? parsed.route : 'viber(60)-sms',
+    parseMode: 'Markdown',
+    mediaUrls: [],
+    buttonRows: [],
+  };
+  const imageUrl = typeof parsed.image_url === 'string' ? parsed.image_url : '';
+  if (imageUrl) {
+    result.mediaType = 'photo';
+    result.mediaUrl = imageUrl;
+  } else {
+    result.mediaType = 'none';
+    result.mediaUrl = '';
+  }
+  const btnUrl = typeof parsed.btn_url === 'string' ? parsed.btn_url : '';
+  const btnName = typeof parsed.btn_name === 'string' ? parsed.btn_name : '';
+  if (btnUrl || btnName) {
+    result.buttonRows = [{
+      id: generateId(),
+      buttons: [{ id: generateId(), text: btnName, url: btnUrl }],
+    }];
+  }
+  return result;
+}
+
 export function parseJsonToMessage(jsonStr: string, platform: Platform): Partial<MessageData> {
   const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
   if (platform === 'telegram') return parseTelegramJson(parsed);
   if (platform === 'max') return parseMaxJson(parsed);
+  if (platform === 'viber') return parseViberJson(parsed);
   return parseEmailJson(parsed);
 }
 
