@@ -240,7 +240,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 </div>
               )}
 
-              <div className="px-4 py-3 text-sm leading-relaxed text-foreground">
+              <div className="px-4 py-3 text-sm leading-relaxed text-foreground break-words [overflow-wrap:anywhere]">
                 {renderText(message.text)}
                 {!viewOnly && (
                   <div className="text-right mt-2">
