@@ -248,6 +248,14 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                 ) : null}
                 {p.label}
                 {p.paid && !isLocked && <Coins size={10} className="text-amber-500/80 ml-0.5" />}
+                {p.dialog24h && !isLocked && (
+                  <span
+                    title="Окно 24 часа: можно писать только в течение 24 ч после последнего сообщения пользователя"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold leading-none ml-0.5"
+                  >
+                    <Clock size={9} /> 24h
+                  </span>
+                )}
               </button>
             );
           })}
