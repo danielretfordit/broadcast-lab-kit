@@ -24,11 +24,13 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
   const isViberPlatform = message.platform === 'viber';
+  const isSmsPlatform = message.platform === 'sms';
   const viberRoute = message.viberRoute || 'viber(60)-sms';
-  const routeHasSms = isViberPlatform && viberRoute.includes('sms');
+  const routeHasSms = (isViberPlatform && viberRoute.includes('sms')) || isSmsPlatform;
   const routeHasViber = isViberPlatform && viberRoute.startsWith('viber');
   const mediaInvalid =
     !isHtmlPlatform &&
+    !isSmsPlatform &&
     !(isViberPlatform && !routeHasViber) &&
     ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2));
@@ -39,13 +41,15 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     (isAlbum && albumUrls.length >= 2);
   const emptyTemplate = isHtmlPlatform
     ? (!message.subject.trim() || textEmpty)
-    : isViberPlatform
-      ? (viberRoute === 'sms-only'
-          ? smsEmpty
-          : viberRoute === 'viber-only'
-            ? textEmpty
-            : (textEmpty || smsEmpty))
-      : (textEmpty && !hasValidMedia);
+    : isSmsPlatform
+      ? smsEmpty
+      : isViberPlatform
+        ? (viberRoute === 'sms-only'
+            ? smsEmpty
+            : viberRoute === 'viber-only'
+              ? textEmpty
+              : (textEmpty || smsEmpty))
+        : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
