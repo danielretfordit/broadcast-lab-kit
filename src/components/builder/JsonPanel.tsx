@@ -121,6 +121,38 @@ export default function JsonPanel() {
       return;
     }
 
+    if (isWhatsApp) {
+      const token = getBotToken('whatsapp' as any);
+      const from = getWhatsAppSender();
+      const to = getTestChatId('whatsapp' as any);
+      if (!token) { toast.error('Сначала укажите API Token (apikey)'); setSettingsOpen(true); return; }
+      if (!from) { toast.error('Укажите Sender ID (from) в настройках'); setSettingsOpen(true); return; }
+      if (!to) { toast.error('Укажите Receiver ID (to) в настройках'); setSettingsOpen(true); return; }
+      const body = editMode ? jsonText : generatedJson;
+      let payload: any;
+      try { payload = JSON.parse(body); } catch { toast.error('Невалидный JSON'); return; }
+      payload.from = from;
+      payload.to = to;
+      setTesting(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('whatsapp-send', { body: { apikey: token, payload } });
+        if (error) {
+          toast.error(`WhatsApp: ${error.message}`);
+        } else if (data?.ok) {
+          const mid = data?.body?.messageId || data?.body?.id || '';
+          toast.success(`WhatsApp: отправлено${mid ? ' • id: ' + mid : ''}`);
+        } else {
+          const msg = data?.body?.message || data?.body?.error || data?.body?.detail || `HTTP ${data?.status}`;
+          toast.error(`WhatsApp: ${msg}`);
+        }
+      } catch (e: any) {
+        toast.error(e?.message || 'Ошибка сети');
+      } finally {
+        setTesting(false);
+      }
+      return;
+    }
+
     const platformKeyEarly: 'telegram' | 'max' = isTelegram ? 'telegram' : 'max';
     const testChatId = (getTestChatId(platformKeyEarly) || '').trim();
     if (!testChatId) {
