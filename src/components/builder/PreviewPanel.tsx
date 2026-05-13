@@ -318,7 +318,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
                   <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    Маршрут: <span className="font-mono">{message.viberRoute || 'viber(60)-sms'}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                    Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span>
                   </p>
                 </div>
               );
@@ -334,7 +334,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
                       : 'sendMessage'
                   : isViber
-                    ? `Provider · route: ${message.viberRoute || 'viber(60)-sms'}`
+                    ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
                     : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
