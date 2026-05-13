@@ -190,8 +190,10 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
         ) : (
           <>
             <div className="flex items-center gap-2 mb-4">
-              {isViberBot ? (
+              {isViberBotPlatform ? (
                 <ViberBrandIcon className="w-8 h-8" style={{ color: '#7360F2' }} />
+              ) : isWhatsAppPlatform ? (
+                <WhatsAppBrandIcon className="w-8 h-8" style={{ color: '#25D366' }} />
               ) : (
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
                   isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
