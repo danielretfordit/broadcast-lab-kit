@@ -20,7 +20,8 @@ export default function JsonPanel() {
   const generatedJson = JSON.stringify(buildJson(message), null, 2);
   const isTelegram = message.platform === 'telegram';
   const isMax = message.platform === 'max';
-  const isViber = message.platform === 'viber';
+  const isViber = message.platform === 'viber_business';
+  const isViberBot = message.platform === 'viber_bot';
   const isSms = message.platform === 'sms';
 
   useEffect(() => {
