@@ -49,11 +49,12 @@ export default function EditorPanel() {
         wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
       }
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
-      const useMaxSyntax = message.platform === 'max' || message.platform === 'viber';
-      if (tag === 'bold') wrapped = useMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
-      else if (tag === 'italic') wrapped = useMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
-      else if (tag === 'underline') wrapped = useMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
-      else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
+      const isMaxSyntax = message.platform === 'max';
+      const isViberSyntax = message.platform === 'viber';
+      if (tag === 'bold') wrapped = isMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
+      else if (tag === 'italic') wrapped = isMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
+      else if (tag === 'underline') wrapped = isMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
+      else if (tag === 'strikethrough') wrapped = isViberSyntax ? `~${selected || 'текст'}~` : `~~${selected || 'текст'}~~`;
       else if (tag === 'mono') wrapped = '```' + (selected || 'код') + '```';
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
