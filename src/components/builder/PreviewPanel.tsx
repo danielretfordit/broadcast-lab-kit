@@ -164,8 +164,10 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     }
   };
 
-  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isViberBot ? 'Viber' : isSms ? 'SMS' : 'MAX';
-  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isViberBot || isSms ? null : maxLogo;
+  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isViberBot ? 'Viber' : isWhatsAppPlatform ? 'WhatsApp' : isSms ? 'SMS' : 'MAX';
+  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isViberBot || isWhatsAppPlatform || isSms ? null : maxLogo;
+  const waButtonsList = (message.buttonRows[0]?.buttons || []).filter(b => (b.text || '').trim()).slice(0, 3);
+  const waHasInteractive = isWhatsAppPlatform && waButtonsList.length > 0;
 
   return (
     <div className="flex flex-col h-full">
