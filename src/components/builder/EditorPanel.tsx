@@ -766,10 +766,6 @@ export default function EditorPanel() {
                           </select>
                         </label>
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <span className="inline-block w-3 h-3 rounded-sm border border-border" style={{ backgroundColor: VIBER_BTN_BG }} />
-                        Цвет фона <span className="font-mono">{VIBER_BTN_BG}</span> (фиксирован)
-                      </div>
                     </div>
                   ))}
                 </div>
