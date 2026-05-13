@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HtmlCodeEditor from './HtmlCodeEditor';
@@ -21,6 +21,9 @@ export default function EditorPanel() {
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
   const mediaUrlMissing = !isHtml && !isAlbum && message.mediaType !== 'none' && !message.mediaUrl.trim();
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
+  const viberRoute = message.viberRoute || 'viber(60)-sms';
+  const routeNeedsSms = isViber && viberRoute.includes('sms');
+  const smsMissing = routeNeedsSms && !(message.smsText || '').trim();
 
   const insertFormatting = (tag: string) => {
     const textarea = document.getElementById('msg-body') as HTMLTextAreaElement | null;
@@ -51,6 +54,7 @@ export default function EditorPanel() {
       else if (tag === 'italic') wrapped = useMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
       else if (tag === 'underline') wrapped = useMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
       else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
+      else if (tag === 'mono') wrapped = '```' + (selected || 'код') + '```';
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
       if (tag === 'bold') wrapped = `<b>${selected || 'текст'}</b>`;
@@ -206,7 +210,26 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {/* Media */}
+      {/* Viber: Route (first) */}
+      {isViber && (
+        <section>
+          <label className="section-label">Маршрут отправки</label>
+          <select
+            value={viberRoute}
+            onChange={e => updateField('viberRoute', e.target.value)}
+            className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+          >
+            <option value="viber(60)-sms">viber(60)-sms — Viber, через 60 сек SMS</option>
+            <option value="viber(30)-sms">viber(30)-sms — Viber, через 30 сек SMS</option>
+            <option value="viber-only">viber-only — только Viber</option>
+            <option value="sms-only">sms-only — только SMS</option>
+          </select>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Провайдер сам выберет канал доставки и при недоставке Viber переключится на SMS.
+          </p>
+        </section>
+      )}
+
       {!isHtml && (
         <section>
           <label className="section-label">Медиа контент</label>
@@ -321,15 +344,23 @@ export default function EditorPanel() {
 
         {!isHtml && (
           <div className="flex items-center gap-1 mb-2">
-            {[
-              { tag: 'bold', icon: Bold, title: 'Жирный' },
-              { tag: 'italic', icon: Italic, title: 'Курсив' },
-              { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
-              { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
-              { tag: 'link', icon: Link, title: 'Ссылка' },
-              ...(isMax ? [{ tag: 'heading', icon: Heading, title: 'Заголовок' }] : []),
-              { tag: 'quote', icon: Quote, title: 'Цитата' },
-            ].map(({ tag, icon: Icon, title }) => (
+            {(isViber
+              ? [
+                  { tag: 'bold', icon: Bold, title: 'Жирный' },
+                  { tag: 'italic', icon: Italic, title: 'Курсив' },
+                  { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
+                  { tag: 'mono', icon: Code, title: 'Моноширинный' },
+                ]
+              : [
+                  { tag: 'bold', icon: Bold, title: 'Жирный' },
+                  { tag: 'italic', icon: Italic, title: 'Курсив' },
+                  { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
+                  { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
+                  { tag: 'link', icon: Link, title: 'Ссылка' },
+                  ...(isMax ? [{ tag: 'heading', icon: Heading, title: 'Заголовок' }] : []),
+                  { tag: 'quote', icon: Quote, title: 'Цитата' },
+                ]
+            ).map(({ tag, icon: Icon, title }) => (
               <button
                 key={tag}
                 type="button"
@@ -406,7 +437,7 @@ export default function EditorPanel() {
         <section>
           <div className="flex items-center justify-between mb-2">
             <label className="section-label !mb-0">
-              {isViber ? 'Кнопка (одна)' : 'Inline кнопки'}
+              {isViber ? 'Кнопка' : 'Inline кнопки'}
             </label>
             {!isViber && (
               <button
@@ -482,60 +513,51 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {/* Viber: SMS fallback + route */}
-      {isViber && (
-        <>
-          <section>
-            <label className="section-label flex items-center gap-1.5">
-              <MessageSquare size={12} /> SMS-сообщение (фолбэк)
-            </label>
-            {(() => {
-              const info = smsParts(message.smsText || '');
-              const tone =
-                info.parts <= 1 ? 'text-success'
-                : info.parts <= 3 ? 'text-warning'
-                : 'text-destructive';
-              return (
-                <>
-                  <textarea
-                    value={message.smsText || ''}
-                    onChange={e => updateField('smsText', e.target.value)}
-                    placeholder="Короткий текст для SMS, если Viber не доставлен..."
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[90px]"
-                  />
-                  <div className="flex items-center justify-between mt-1.5 text-[11px]">
-                    <span className="text-muted-foreground">
-                      Кодировка: <span className="font-mono">{info.encoding}</span> ({info.encoding === 'UCS2' ? 'кириллица' : 'латиница'})
-                    </span>
-                    <span className={`${tone} font-semibold`}>
-                      {info.len} симв. • {info.parts} SMS
-                      {info.parts > 0 && (
-                        <span className="text-muted-foreground font-normal"> · до конца части: {info.remaining}</span>
-                      )}
-                    </span>
-                  </div>
-                </>
-              );
-            })()}
-          </section>
-
-          <section>
-            <label className="section-label">Маршрут отправки</label>
-            <select
-              value={message.viberRoute || 'viber(60)-sms'}
-              onChange={e => updateField('viberRoute', e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-            >
-              <option value="viber(60)-sms">viber(60)-sms — Viber, через 60 сек SMS</option>
-              <option value="viber(30)-sms">viber(30)-sms — Viber, через 30 сек SMS</option>
-              <option value="viber-only">viber-only — только Viber</option>
-              <option value="sms-only">sms-only — только SMS</option>
-            </select>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Провайдер сам выберет канал доставки и при недоставке Viber переключится на SMS.
-            </p>
-          </section>
-        </>
+      {/* Viber: SMS fallback (only if route includes SMS) */}
+      {routeNeedsSms && (
+        <section>
+          <label className="section-label flex items-center gap-1.5">
+            <MessageSquare size={12} /> SMS-сообщение
+          </label>
+          {(() => {
+            const info = smsParts(message.smsText || '');
+            const tone =
+              info.parts <= 1 ? 'text-success'
+              : info.parts <= 3 ? 'text-warning'
+              : 'text-destructive';
+            return (
+              <>
+                <textarea
+                  value={message.smsText || ''}
+                  onChange={e => updateField('smsText', e.target.value)}
+                  placeholder="Короткий текст для SMS, если Viber не доставлен..."
+                  className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 resize-y min-h-[90px] ${
+                    smsMissing
+                      ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
+                      : 'border-border focus:ring-primary/20 focus:border-primary/40'
+                  }`}
+                />
+                <div className="flex items-center justify-between mt-1.5 text-[11px]">
+                  <span className="text-muted-foreground">
+                    {info.encoding === 'UCS2' ? 'Кириллица' : 'Латиница'}
+                  </span>
+                  <span className={`${tone} font-semibold`}>
+                    {info.len} симв. • {info.parts} SMS
+                    {info.parts > 0 && (
+                      <span className="text-muted-foreground font-normal"> · до конца части: {info.remaining}</span>
+                    )}
+                  </span>
+                </div>
+                {smsMissing && (
+                  <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                    <AlertCircle size={11} />
+                    Укажите текст SMS для выбранного маршрута
+                  </p>
+                )}
+              </>
+            );
+          })()}
+        </section>
       )}
     </div>
   );
