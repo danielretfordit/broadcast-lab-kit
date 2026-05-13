@@ -161,8 +161,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     }
   };
 
-  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isSms ? 'SMS' : 'MAX';
-  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isSms ? null : maxLogo;
+  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isViberBot ? 'Viber' : isSms ? 'SMS' : 'MAX';
+  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isViberBot || isSms ? null : maxLogo;
 
   return (
     <div className="flex flex-col h-full">
@@ -186,10 +186,11 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           <>
             <div className="flex items-center gap-2 mb-4">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-                isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
+                isTelegram ? 'bg-[hsl(200,80%,50%)]' : (isViber || isViberBot) ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
               }`}>
                 {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
                 {isViber && <MessageSquare size={14} className="text-white" />}
+                {isViberBot && <span className="text-white text-[11px] font-bold">V</span>}
                 {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
               </div>
               <div>
