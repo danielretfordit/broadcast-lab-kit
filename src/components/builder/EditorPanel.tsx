@@ -405,6 +405,7 @@ export default function EditorPanel() {
       )}
 
       {/* AI Editor */}
+      {!isSms && (
       <section>
         <button
           type="button"
