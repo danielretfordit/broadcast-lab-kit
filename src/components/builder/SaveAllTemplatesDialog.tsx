@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { loadDraft } from '@/contexts/MessageContext';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildViberBotJson, buildSmsJson, MessageData, Platform } from '@/lib/message-builder';
+import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildViberBotJson, buildSmsJson, buildWhatsAppJson, MessageData, Platform } from '@/lib/message-builder';
 import maxLogo from '@/assets/max-logo.png';
 import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
+import WhatsAppBrandIcon from '@/components/icons/WhatsAppBrandIcon';
 import { Clock } from 'lucide-react';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
