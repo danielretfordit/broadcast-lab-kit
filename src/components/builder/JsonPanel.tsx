@@ -163,7 +163,7 @@ export default function JsonPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : '(MAX)'}
+            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : isSms ? '(SMS)' : '(MAX)'}
           </h3>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
             validation.valid
