@@ -23,6 +23,8 @@ export default function EditorPanel() {
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeNeedsSms = isViber && viberRoute.includes('sms');
+  const isSmsOnly = isViber && viberRoute === 'sms-only';
+  const showViberContent = !isViber || viberRoute.startsWith('viber');
   const smsMissing = routeNeedsSms && !(message.smsText || '').trim();
 
   const insertFormatting = (tag: string) => {
