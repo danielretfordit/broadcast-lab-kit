@@ -83,6 +83,7 @@ function buildFor(p: Platform, m: MessageData): object {
   if (p === 'viber_business') return buildViberJson(m);
   if (p === 'viber_bot') return buildViberBotJson(m);
   if (p === 'sms') return buildSmsJson(m);
+  if (p === 'whatsapp') return buildWhatsAppJson(m);
   return buildEmailJson(m);
 }
 
@@ -111,6 +112,9 @@ function PlatformIcon({ p }: { p: Platform }) {
   if (p === 'viber_bot') {
     return <ViberBrandIcon className="w-7 h-7" style={{ color: '#7360F2' }} />;
   }
+  if (p === 'whatsapp') {
+    return <WhatsAppBrandIcon className="w-7 h-7" style={{ color: '#25D366' }} />;
+  }
   if (p === 'sms') {
     return (
       <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
@@ -137,6 +141,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
       max: get('max'),
       viber_business: get('viber_business'),
       viber_bot: get('viber_bot'),
+      whatsapp: get('whatsapp'),
       sms: get('sms'),
       html: get('html'),
     };
@@ -147,12 +152,13 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
     max: isFilled(drafts.max),
     viber_business: isFilled(drafts.viber_business),
     viber_bot: isFilled(drafts.viber_bot),
+    whatsapp: isWhatsAppFilled(drafts.whatsapp),
     sms: isFilled(drafts.sms),
     html: isFilled(drafts.html),
   }), [drafts]);
 
   const [selected, setSelected] = useState<Record<Platform, boolean>>({
-    telegram: true, max: true, viber_business: true, viber_bot: true, sms: true, html: true,
+    telegram: true, max: true, viber_business: true, viber_bot: true, whatsapp: true, sms: true, html: true,
   });
 
   // Reset selection on open based on filled state
@@ -163,6 +169,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
         max: filledMap.max,
         viber_business: filledMap.viber_business,
         viber_bot: filledMap.viber_bot,
+        whatsapp: filledMap.whatsapp,
         sms: filledMap.sms,
         html: filledMap.html,
       });
