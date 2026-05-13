@@ -314,7 +314,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       {info.len} симв. • {info.parts} SMS
                     </span>
                   </div>
-                  <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap min-h-[48px]">
+                  <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap break-all [overflow-wrap:anywhere] min-h-[48px]">
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
                   <p className="mt-1.5 text-[10px] text-muted-foreground">
