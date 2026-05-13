@@ -327,7 +327,7 @@ export default function EditorPanel() {
               { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
               { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
               { tag: 'link', icon: Link, title: 'Ссылка' },
-              { tag: 'heading', icon: Heading, title: 'Заголовок' },
+              ...(isMax ? [{ tag: 'heading', icon: Heading, title: 'Заголовок' }] : []),
               { tag: 'quote', icon: Quote, title: 'Цитата' },
             ].map(({ tag, icon: Icon, title }) => (
               <button
@@ -356,9 +356,9 @@ export default function EditorPanel() {
             onChange={e => updateField('text', e.target.value)}
             placeholder={
               message.parseMode === 'MarkdownV2'
-                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n# Заголовок\n> Цитата'
+                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
                 : message.parseMode === 'Markdown'
-                  ? '**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ `код`\n[ссылка](https://...)\n# Заголовок\n> Цитата'
+                  ? `**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\`\n[ссылка](https://...)${isMax ? '\n# Заголовок' : ''}\n> Цитата`
                   : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
