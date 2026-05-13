@@ -11,28 +11,31 @@ import { useSearchParams } from 'react-router-dom';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
-const platforms: { id: Platform; label: string; logo?: string; icon?: typeof Code2 }[] = [
-  { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
-  { id: 'max', label: 'MAX', logo: maxLogo },
-  { id: 'html', label: 'Email', icon: Mail },
-];
-
-type BuilderMode = 'marketing' | 'transactional';
-
-interface AppHeaderProps {
-  builderMode: BuilderMode;
-  onBuilderModeChange: (mode: BuilderMode) => void;
-  lockedMode?: BuilderMode | null;
-  lockedChannel?: Platform | null;
-}
+type PlatformTab = {
+  id: Platform;
+  label: string;
+  logo?: string;
+  icon?: typeof Code2;
+  CustomIcon?: React.FC<{ className?: string }>;
+  iconBg?: string;
+  iconColor?: string;
+};
 
 function ViberIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
-      <path d="M12.32 2C6.99 2 2.5 6.28 2.5 11.5c0 1.96.55 3.86 1.58 5.48L2.5 22l5.23-1.5a9.47 9.47 0 0 0 4.59 1.17c5.33 0 9.68-4.28 9.68-9.5S17.65 2 12.32 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M19.78 14.43c-.36 2.84-2.46 3.02-2.85 3.14-.16.05-1.66.42-3.55-.84a31.5 31.5 0 0 1-3.27-2.51 18 18 0 0 1-2.42-2.95c-.83-1.27-1.4-2.7-1.43-2.79a3.94 3.94 0 0 1-.05-2.62c.34-.86 1.05-1.16 1.36-1.27.3-.1.59-.06.78.05.27.16.86.86 1.45 1.79.27.43.51.92.4 1.27-.1.34-.43.6-.7.86-.28.27-.45.46-.32.74.12.27.6.99 1.31 1.62.91.81 1.66 1.05 1.94 1.18.27.13.45-.02.65-.27.2-.24.55-.65.85-.85.3-.2.55-.18.84-.07.3.11 1.92.91 2.25 1.07.34.16.56.24.64.38.08.14.08.8-.18 1.57z"/>
+      <path d="M12 1.5c-5.8 0-9.46 4.4-9.5 8.78a8.4 8.4 0 0 0 1.32 4.84l-.86 3.16 3.27-.86A9.07 9.07 0 0 0 12 18.78c5.8 0 9.5-4.4 9.5-8.5S17.8 1.5 12 1.5zm5.4 12.66a3.65 3.65 0 0 1-2.66 1.94l-.78.18a13 13 0 0 1-3.36-1c-3.42-1.49-5.5-4.96-5.66-5.18-.16-.22-1.32-1.74-1.32-3.32 0-1.58.83-2.36 1.13-2.68.3-.32.65-.4.86-.4l.62.01c.2.01.46-.07.72.55.27.65.92 2.25.99 2.4.07.16.13.34.02.55-.1.22-.16.35-.31.54-.16.18-.33.4-.47.54-.16.16-.32.32-.14.62.18.3.81 1.34 1.74 2.16 1.2 1.07 2.2 1.4 2.5 1.55.3.16.48.13.66-.07.18-.2.76-.88.96-1.18.2-.3.4-.25.67-.15.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.13.07.74-.18 1.45-.27.7-1.5 1.4-2.05 1.46-.55.07-.6.11-3.66-1.42-3.6-1.78-5.86-5.55-6.04-5.79-.18-.24-1.43-1.9-1.43-3.62 0-1.71.9-2.55 1.21-2.9.32-.34.7-.43.94-.43.23 0 .45 0 .65.01" fill="none"/>
     </svg>
   );
 }
+
+const platforms: PlatformTab[] = [
+  { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
+  { id: 'max', label: 'MAX', logo: maxLogo },
+  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberIcon, iconColor: '#7360F2' },
+  { id: 'html', label: 'Email', icon: Mail },
+];
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
