@@ -817,3 +817,43 @@ export default function EditorPanel() {
     </div>
   );
 }
+
+interface ViberBtnFormatToolbarProps {
+  onWrap: (open: string, close: string, placeholder?: string) => void;
+}
+
+function ViberBtnFormatToolbar({ onWrap }: ViberBtnFormatToolbarProps) {
+  const [color, setColor] = useState<'#000000' | '#FFFFFF'>('#FFFFFF');
+  const [size, setSize] = useState<number>(20);
+  const applyFont = (bold: boolean) => {
+    const open = `<font size='${size}' color='${color}'>${bold ? '<b>' : ''}`;
+    const close = `${bold ? '</b>' : ''}</font>`;
+    onWrap(open, close, 'текст');
+  };
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      <button type="button" title="Жирный <b>"
+        onMouseDown={e => { e.preventDefault(); onWrap('<b>', '</b>', 'текст'); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[11px] font-bold text-foreground hover:border-primary/40 transition-colors">B</button>
+      <button type="button" title="Курсив <i>"
+        onMouseDown={e => { e.preventDefault(); onWrap('<i>', '</i>', 'текст'); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[11px] italic text-foreground hover:border-primary/40 transition-colors">I</button>
+      <span className="mx-1 text-[10px] text-muted-foreground">|</span>
+      <button type="button" title="Чёрный текст" onClick={() => setColor('#000000')}
+        className={`w-6 h-6 rounded-md border bg-black ${color === '#000000' ? 'ring-2 ring-primary ring-offset-1' : 'border-border'}`} />
+      <button type="button" title="Белый текст" onClick={() => setColor('#FFFFFF')}
+        className={`w-6 h-6 rounded-md border bg-white ${color === '#FFFFFF' ? 'ring-2 ring-primary ring-offset-1' : 'border-border'}`} />
+      <select value={size} onChange={e => setSize(Number(e.target.value))}
+        className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-foreground" title="Размер (12–32)">
+        {[12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map(n => <option key={n} value={n}>{n}px</option>)}
+      </select>
+      <button type="button" title="Применить <font size color>"
+        onMouseDown={e => { e.preventDefault(); applyFont(false); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[10px] font-medium text-foreground hover:border-primary/40 transition-colors">Шрифт</button>
+      <button type="button" title="Применить <font size color><b>"
+        onMouseDown={e => { e.preventDefault(); applyFont(true); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[10px] font-bold text-foreground hover:border-primary/40 transition-colors">Шрифт+B</button>
+    </div>
+  );
+}
+
