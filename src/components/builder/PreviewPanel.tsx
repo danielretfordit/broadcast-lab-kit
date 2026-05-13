@@ -449,3 +449,48 @@ function AlbumGrid({ urls }: { urls: string[] }) {
   );
 }
 
+function renderViberBtnText(raw: string): string {
+  const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  const allowed = /<\/?(b|i|u)>/gi;
+  let out = '';
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = allowed.exec(raw)) !== null) {
+    out += escape(raw.slice(last, m.index)) + m[0].toLowerCase();
+    last = m.index + m[0].length;
+  }
+  out += escape(raw.slice(last));
+  return out.replace(/\n/g, '<br/>');
+}
+
+function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbButton[] }[] }) {
+  const sizeCls: Record<string, string> = { small: 'text-[11px]', regular: 'text-xs', large: 'text-sm' };
+  const hAlign: Record<string, string> = { left: 'justify-start', center: 'justify-center', right: 'justify-end' };
+  const vAlign: Record<string, string> = { top: 'items-start', middle: 'items-center', bottom: 'items-end' };
+  const actionIcon: Record<string, string> = { 'open-url': '🔗', 'share-phone': '📞', 'location-picker': '📍', 'reply': '' };
+
+  return (
+    <div className="rounded-lg p-1.5 grid grid-cols-6 gap-1 border border-border" style={{ backgroundColor: VIBER_KB_BG }}>
+      {rows.flatMap(row => row.buttons).map(b => {
+        const icon = actionIcon[b.actionType] || '';
+        const cols = Math.max(1, Math.min(6, b.columns));
+        const rs = Math.max(1, Math.min(2, b.rows));
+        return (
+          <div
+            key={b.id}
+            className={`rounded-md px-2 py-2 text-white flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
+            style={{
+              backgroundColor: VIBER_BTN_BG,
+              gridColumn: `span ${cols} / span ${cols}`,
+              minHeight: `${rs * 36}px`,
+            }}
+            title={b.actionType === 'open-url' ? b.actionBody : undefined}
+          >
+            <span className="text-center leading-tight" dangerouslySetInnerHTML={{ __html: (icon ? icon + ' ' : '') + renderViberBtnText(b.text || '') }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
