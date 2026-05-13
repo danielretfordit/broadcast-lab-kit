@@ -117,11 +117,12 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
     telegram: isFilled(drafts.telegram),
     max: isFilled(drafts.max),
     viber: isFilled(drafts.viber),
+    sms: isFilled(drafts.sms),
     html: isFilled(drafts.html),
   }), [drafts]);
 
   const [selected, setSelected] = useState<Record<Platform, boolean>>({
-    telegram: true, max: true, viber: true, html: true,
+    telegram: true, max: true, viber: true, sms: true, html: true,
   });
 
   // Reset selection on open based on filled state
@@ -131,6 +132,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
         telegram: filledMap.telegram,
         max: filledMap.max,
         viber: filledMap.viber,
+        sms: filledMap.sms,
         html: filledMap.html,
       });
     }
