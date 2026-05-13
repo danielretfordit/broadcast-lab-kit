@@ -44,7 +44,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           ? smsEmpty
           : viberRoute === 'viber-only'
             ? textEmpty
-            : (textEmpty && smsEmpty))
+            : (textEmpty || smsEmpty))
       : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
