@@ -151,7 +151,7 @@ export default function EditorPanel() {
     });
   };
 
-
+  const mediaTypes = isViber
     ? [
         { id: 'none' as const, icon: null, label: 'Нет' },
         { id: 'photo' as const, icon: Image, label: 'Фото' },
