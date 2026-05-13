@@ -402,6 +402,7 @@ export default function EditorPanel() {
           />
         )}
       </section>
+      )}
 
       {/* AI Editor */}
       <section>
