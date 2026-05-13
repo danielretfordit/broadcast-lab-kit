@@ -245,12 +245,13 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                   <img src={p.logo} alt={p.label} className="w-4 h-4" />
                 ) : p.CustomIcon ? (
                   <span style={p.iconColor ? { color: p.iconColor } : undefined}>
-                    <p.CustomIcon className="w-4 h-4" />
+                    <p.CustomIcon className={p.iconClassName ?? 'w-4 h-4'} />
                   </span>
                 ) : p.icon ? (
                   <p.icon size={14} />
                 ) : null}
                 {p.label}
+                {p.paid && !isLocked && <Coins size={10} className="text-amber-500/80 ml-0.5" />}
               </button>
             );
           })}
