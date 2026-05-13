@@ -260,6 +260,7 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
           {([
             { id: 'viber-personal', label: 'Viber', Icon: ViberBrandIcon, paid: false },
             { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
+            { id: 'sms', label: 'SMS', Icon: SmsIcon, paid: true },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
               <TooltipTrigger asChild>
