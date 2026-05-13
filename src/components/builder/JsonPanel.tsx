@@ -4,7 +4,7 @@ import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTe
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import BotSettingsDialog, { getBotToken, getTestChatId, getViberBotSender } from './BotSettingsDialog';
+import BotSettingsDialog, { getBotToken, getTestChatId, getViberBotSender, getWhatsAppSender } from './BotSettingsDialog';
 import { useSearchParams } from 'react-router-dom';
 
 export default function JsonPanel() {
