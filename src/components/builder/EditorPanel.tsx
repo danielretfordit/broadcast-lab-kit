@@ -513,60 +513,51 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {/* Viber: SMS fallback + route */}
-      {isViber && (
-        <>
-          <section>
-            <label className="section-label flex items-center gap-1.5">
-              <MessageSquare size={12} /> SMS-сообщение (фолбэк)
-            </label>
-            {(() => {
-              const info = smsParts(message.smsText || '');
-              const tone =
-                info.parts <= 1 ? 'text-success'
-                : info.parts <= 3 ? 'text-warning'
-                : 'text-destructive';
-              return (
-                <>
-                  <textarea
-                    value={message.smsText || ''}
-                    onChange={e => updateField('smsText', e.target.value)}
-                    placeholder="Короткий текст для SMS, если Viber не доставлен..."
-                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[90px]"
-                  />
-                  <div className="flex items-center justify-between mt-1.5 text-[11px]">
-                    <span className="text-muted-foreground">
-                      Кодировка: <span className="font-mono">{info.encoding}</span> ({info.encoding === 'UCS2' ? 'кириллица' : 'латиница'})
-                    </span>
-                    <span className={`${tone} font-semibold`}>
-                      {info.len} симв. • {info.parts} SMS
-                      {info.parts > 0 && (
-                        <span className="text-muted-foreground font-normal"> · до конца части: {info.remaining}</span>
-                      )}
-                    </span>
-                  </div>
-                </>
-              );
-            })()}
-          </section>
-
-          <section>
-            <label className="section-label">Маршрут отправки</label>
-            <select
-              value={message.viberRoute || 'viber(60)-sms'}
-              onChange={e => updateField('viberRoute', e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-            >
-              <option value="viber(60)-sms">viber(60)-sms — Viber, через 60 сек SMS</option>
-              <option value="viber(30)-sms">viber(30)-sms — Viber, через 30 сек SMS</option>
-              <option value="viber-only">viber-only — только Viber</option>
-              <option value="sms-only">sms-only — только SMS</option>
-            </select>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Провайдер сам выберет канал доставки и при недоставке Viber переключится на SMS.
-            </p>
-          </section>
-        </>
+      {/* Viber: SMS fallback (only if route includes SMS) */}
+      {routeNeedsSms && (
+        <section>
+          <label className="section-label flex items-center gap-1.5">
+            <MessageSquare size={12} /> SMS-сообщение
+          </label>
+          {(() => {
+            const info = smsParts(message.smsText || '');
+            const tone =
+              info.parts <= 1 ? 'text-success'
+              : info.parts <= 3 ? 'text-warning'
+              : 'text-destructive';
+            return (
+              <>
+                <textarea
+                  value={message.smsText || ''}
+                  onChange={e => updateField('smsText', e.target.value)}
+                  placeholder="Короткий текст для SMS, если Viber не доставлен..."
+                  className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 resize-y min-h-[90px] ${
+                    smsMissing
+                      ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
+                      : 'border-border focus:ring-primary/20 focus:border-primary/40'
+                  }`}
+                />
+                <div className="flex items-center justify-between mt-1.5 text-[11px]">
+                  <span className="text-muted-foreground">
+                    {info.encoding === 'UCS2' ? 'Кириллица' : 'Латиница'}
+                  </span>
+                  <span className={`${tone} font-semibold`}>
+                    {info.len} симв. • {info.parts} SMS
+                    {info.parts > 0 && (
+                      <span className="text-muted-foreground font-normal"> · до конца части: {info.remaining}</span>
+                    )}
+                  </span>
+                </div>
+                {smsMissing && (
+                  <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                    <AlertCircle size={11} />
+                    Укажите текст SMS для выбранного маршрута
+                  </p>
+                )}
+              </>
+            );
+          })()}
+        </section>
       )}
     </div>
   );
