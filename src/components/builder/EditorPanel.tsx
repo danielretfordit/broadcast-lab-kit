@@ -16,15 +16,16 @@ export default function EditorPanel() {
   const isHtml = message.platform === 'html';
   const isViber = message.platform === 'viber';
   const isMax = message.platform === 'max';
+  const isSms = message.platform === 'sms';
   const isAlbum = message.mediaType === 'album';
   const albumUrls = message.mediaUrls || [];
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
   const mediaUrlMissing = !isHtml && !isAlbum && message.mediaType !== 'none' && !message.mediaUrl.trim();
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
   const viberRoute = message.viberRoute || 'viber(60)-sms';
-  const routeNeedsSms = isViber && viberRoute.includes('sms');
+  const routeNeedsSms = (isViber && viberRoute.includes('sms')) || isSms;
   const isSmsOnly = isViber && viberRoute === 'sms-only';
-  const showViberContent = !isViber || viberRoute.startsWith('viber');
+  const showViberContent = !isSms && (!isViber || viberRoute.startsWith('viber'));
   const smsMissing = routeNeedsSms && !(message.smsText || '').trim();
 
   const insertFormatting = (tag: string) => {
