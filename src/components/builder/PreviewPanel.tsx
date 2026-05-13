@@ -309,7 +309,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                       <MessageSquare size={12} className="text-muted-foreground" />
                     </div>
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">SMS-фолбэк</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">SMS</p>
                     <span className={`ml-auto text-[11px] font-semibold ${tone}`}>
                       {info.len} симв. • {info.parts} SMS
                     </span>

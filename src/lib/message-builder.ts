@@ -172,12 +172,13 @@ export function buildViberJson(msg: MessageData): object {
   }
 
   const btn = msg.buttonRows[0]?.buttons[0];
+  const outRoute = route === 'viber-only' ? 'viber' : route;
   const base: Record<string, unknown> = {
     login: '******',
     password: '******',
     phones: '<phone>',
     message: msg.text || '',
-    route,
+    route: outRoute,
     rus: '1',
     image_url: msg.mediaUrl || '',
     btn_url: btn?.url || '',
