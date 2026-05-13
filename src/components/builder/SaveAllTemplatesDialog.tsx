@@ -226,6 +226,14 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
                   <span className="text-sm font-medium text-foreground inline-flex items-center gap-1">
                     {p.label}
                     {p.paid && <Coins size={12} className="text-amber-500/80" />}
+                    {p.dialog24h && (
+                      <span
+                        title="Окно 24 часа: можно писать только в течение 24 ч после последнего сообщения пользователя"
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold leading-none"
+                      >
+                        <Clock size={9} /> 24h
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div>
