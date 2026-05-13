@@ -302,7 +302,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
             )}
             </>)}
 
-            {isViber && routeHasSms && (() => {
+            {((isViber && routeHasSms) || isSms) && (() => {
               const info = smsParts(message.smsText || '');
               const tone =
                 info.parts === 0 ? 'text-muted-foreground'
@@ -324,7 +324,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
                   <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                    {isSms ? <>кодировка <span className="font-mono">{info.encoding}</span></> : <>Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span></>}
                   </p>
                 </div>
               );
@@ -341,7 +341,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       : 'sendMessage'
                   : isViber
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
-                    : 'POST /messages'}
+                    : isSms
+                      ? 'Provider · route: sms'
+                      : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
