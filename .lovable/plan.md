@@ -1,32 +1,45 @@
-## Исправление форматирования для Viber Business / SMS
+## Доп. правки превью Viber Business / SMS
 
-Привести синтаксис разметки к спецификации Viber:
-- **Жирный** — `*текст*` (одна звёздочка)
-- **Курсив** — `_текст_` (одно подчёркивание)
-- **Моноширинный** — ` ```текст``` ` (три бэктика)
-- **Зачёркнутый** — `~текст~` (одна тильда)
+### 1) `src/components/builder/PreviewPanel.tsx`
+- Завести флаги по маршруту:
+  - `route = message.viberRoute || 'viber(60)-sms'`
+  - `routeHasSms = route.includes('sms')` (true для `viber(60)-sms`, `viber(30)-sms`, `sms-only`)
+  - `routeHasViber = route.startsWith('viber')` (true для всех, кроме `sms-only`)
+- Блок Viber-превью (карточка с медиа/текстом/кнопками + строка "API Method") рендерим только если `!isViber || routeHasViber`. Для `sms-only` его не показываем.
+- Блок SMS-фолбэка (`isViber && (() => …)()`) рендерим только при `routeHasSms`. Для `viber-only` его скрываем.
+- Для `sms-only` шапку "Viber Business / SMS Preview" оставляем (это заголовок раздела), а в footer-подписи API Method заменяем на `Provider · route: sms-only`.
 
-### Сейчас (баги для Viber)
-В `src/components/builder/EditorPanel.tsx`, функция `insertFormatting` объединяет MAX и Viber через `useMaxSyntax`, из-за чего для Viber вставляется:
-- bold → `**текст**` (надо `*текст*`)
-- italic → `*текст*` (надо `_текст_`)
-- strikethrough → `~~текст~~` (надо `~текст~`)
-- mono → ` ```текст``` ` — корректно
+### 2) `src/components/builder/PreviewPanel.tsx` — валидация сохранения
+- Скорректировать `emptyTemplate` для Viber:
+  - `viber-only` → блокировать только если пустой `text`.
+  - `sms-only` → блокировать только если пустой `smsText`.
+  - маршруты с обоими каналами → как сейчас (нужен либо `text`, либо `smsText`; уже есть `textEmpty && smsEmpty`).
 
-Также плейсхолдер textarea для `Markdown` показывает MAX-синтаксис (`**Жирный**`, `~~зачёркнутый~~`), что вводит в заблуждение в Viber.
+### 3) `src/lib/message-builder.ts` — `buildViberJson`
+Изменить структуру в зависимости от маршрута:
 
-### Изменения в `src/components/builder/EditorPanel.tsx`
+- Если `route === 'sms-only'` — отдавать строго:
+  ```json
+  {
+    "login": "******",
+    "password": "******",
+    "phones": "<phone>",
+    "message": "<smsText>",
+    "route": "sms",
+    "rus": "1"
+  }
+  ```
+  Поле `message` берётся из `msg.smsText`. Никаких `param_sms`, `image_url`, `btn_url`, `btn_name`.
+- Если `route === 'viber-only'` — оставить текущую структуру, но без `param_sms` (SMS-фолбэка нет).
+- Иначе (`viber(60)-sms`, `viber(30)-sms`) — текущая структура с `param_sms`.
 
-1. Развести синтаксис MAX и Viber в `insertFormatting` (строки 51–58):
-   - Ввести `isMaxSyntax = platform === 'max'` и `isViberSyntax = platform === 'viber'`.
-   - Viber: `bold → *...*`, `italic → _..._`, `strikethrough → ~...~`, `mono → \`\`\`...\`\`\``.
-   - MAX: оставить как сейчас (`**`, `*`, `~~`, ` ``` `, `++`).
-   - Telegram (MarkdownV2) — без изменений.
-
-2. Плейсхолдер textarea (строка 388–394): для Viber показать
-   `*Жирный* _курсив_ ~зачёркнутый~ \`\`\`моноширинный\`\`\`` (без ссылок и цитат — они уже убраны из тулбара Viber).
+### 4) `src/components/builder/EditorPanel.tsx` — UX-правки под маршрут (минимально)
+- Для `sms-only` секция «Текст сообщения / медиа / кнопка» Viber не нужна как обязательная — `routeNeedsSms` уже включает SMS-секцию. Дополнительно: при `sms-only` скрывать секции «Медиа контент» и inline-кнопку Viber, оставлять только маршрут + SMS-блок (тулбар/textarea для основного текста тоже скрыть, т.к. `message` для sms-only берётся из `smsText`).
+- Для `viber-only` — скрывать SMS-секцию (уже сделано через `routeNeedsSms`).
 
 ### Файлы
-- `src/components/builder/EditorPanel.tsx` — единственный файл правок.
+- `src/components/builder/PreviewPanel.tsx`
+- `src/lib/message-builder.ts`
+- `src/components/builder/EditorPanel.tsx`
 
-Никаких изменений в JSON-сборке, контексте или схеме не требуется — `message` отправляется в Viber как есть.
+Без изменений в схеме БД, контексте сообщения и edge-функциях.
