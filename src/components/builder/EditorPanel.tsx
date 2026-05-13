@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HtmlCodeEditor from './HtmlCodeEditor';
+import { smsParts } from '@/lib/sms';
 
 export default function EditorPanel() {
   const { message, updateField } = useMessage();
@@ -13,6 +14,8 @@ export default function EditorPanel() {
   const [showAi, setShowAi] = useState(false);
 
   const isHtml = message.platform === 'html';
+  const isViber = message.platform === 'viber';
+  const isMax = message.platform === 'max';
   const isAlbum = message.mediaType === 'album';
   const albumUrls = message.mediaUrls || [];
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
