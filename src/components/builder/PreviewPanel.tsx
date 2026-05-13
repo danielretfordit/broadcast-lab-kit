@@ -23,7 +23,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
-  const isViberPlatform = message.platform === 'viber';
+  const isViberPlatform = message.platform === 'viber_business';
+  const isViberBotPlatform = message.platform === 'viber_bot';
   const isSmsPlatform = message.platform === 'sms';
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeHasSms = (isViberPlatform && viberRoute.includes('sms')) || isSmsPlatform;
@@ -49,7 +50,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
             : viberRoute === 'viber-only'
               ? textEmpty
               : (textEmpty || smsEmpty))
-        : (textEmpty && !hasValidMedia);
+        : isViberBotPlatform
+          ? (textEmpty && !hasValidMedia)
+          : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
@@ -120,7 +123,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
 
   const isTelegram = message.platform === 'telegram';
   const isHtml = message.platform === 'html';
-  const isViber = message.platform === 'viber';
+  const isViber = message.platform === 'viber_business';
+  const isViberBot = message.platform === 'viber_bot';
   const isSms = message.platform === 'sms';
 
   const handleSaveToProject = async () => {
