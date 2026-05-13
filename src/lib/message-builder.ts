@@ -157,9 +157,26 @@ export function buildEmailJson(msg: MessageData): object {
   };
 }
 
+export function buildViberJson(msg: MessageData): object {
+  const btn = msg.buttonRows[0]?.buttons[0];
+  return {
+    login: '******',
+    password: '******',
+    phones: '<phone>',
+    message: msg.text || '',
+    route: msg.viberRoute || 'viber(60)-sms',
+    param_sms: msg.smsText || '',
+    rus: '1',
+    image_url: msg.mediaUrl || '',
+    btn_url: btn?.url || '',
+    btn_name: btn?.text || '',
+  };
+}
+
 export function buildJson(msg: MessageData): object {
   if (msg.platform === 'telegram') return buildTelegramJson(msg);
   if (msg.platform === 'max') return buildMaxJson(msg);
+  if (msg.platform === 'viber') return buildViberJson(msg);
   return buildEmailJson(msg);
 }
 
