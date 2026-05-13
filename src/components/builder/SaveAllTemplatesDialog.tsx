@@ -24,9 +24,23 @@ const PLATFORMS: { key: Platform; label: string; paid?: boolean; dialog24h?: boo
   { key: 'max', label: 'MAX' },
   { key: 'viber_business', label: 'Viber Business / SMS', paid: true },
   { key: 'viber_bot', label: 'Viber', dialog24h: true },
+  { key: 'whatsapp', label: 'WhatsApp', dialog24h: true },
   { key: 'sms', label: 'SMS', paid: true },
   { key: 'html', label: 'HTML (Email)' },
 ];
+
+function isWhatsAppFilled(m: MessageData): boolean {
+  const buttons = (m.buttonRows[0]?.buttons || []).filter(b => (b.text || '').trim());
+  if (buttons.length > 0) {
+    if (buttons.length > 3) return false;
+    if (!m.text.trim()) return false;
+    return true;
+  }
+  if (m.mediaType !== 'none') {
+    return !!m.mediaUrl.trim();
+  }
+  return !!m.text.trim();
+}
 
 function isFilled(m: MessageData): boolean {
   if (m.platform === 'sms') return !!(m.smsText && m.smsText.trim());
