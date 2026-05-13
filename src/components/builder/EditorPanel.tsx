@@ -343,6 +343,20 @@ export default function EditorPanel() {
                   Укажите ссылку на {mediaLabel[message.mediaType]}
                 </p>
               )}
+              {isViberBot && message.mediaType === 'photo' && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={message.viberBotThumbnail || ''}
+                    onChange={e => updateField('viberBotThumbnail', e.target.value)}
+                    placeholder="https://example.com/thumb.jpg (превью, опционально)"
+                    className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                  />
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Превью отображается до клика на картинку. Рекомендуется 400×400, до 100 KB.
+                  </p>
+                </div>
+              )}
             </>
           )}
           {isAlbum && (
