@@ -4,10 +4,11 @@ import { ExternalLink, Save, Loader2, MoreVertical, Layers, MessageSquare } from
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
-import { buildJson } from '@/lib/message-builder';
+import { buildJson, VIBER_BTN_BG, VIBER_KB_BG, type ViberKbButton } from '@/lib/message-builder';
 import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
+import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
