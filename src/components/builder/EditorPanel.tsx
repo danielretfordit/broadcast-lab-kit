@@ -123,8 +123,6 @@ export default function EditorPanel() {
       ? [
           { id: 'none' as const, icon: null, label: 'Нет' },
           { id: 'photo' as const, icon: Image, label: 'Фото' },
-          { id: 'video' as const, icon: Video, label: 'Видео' },
-          { id: 'document' as const, icon: FileText, label: 'Файл' },
         ]
       : [
           { id: 'none' as const, icon: null, label: 'Нет' },
