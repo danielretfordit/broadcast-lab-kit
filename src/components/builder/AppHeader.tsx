@@ -37,6 +37,15 @@ const platforms: PlatformTab[] = [
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
+type BuilderMode = 'marketing' | 'transactional';
+
+interface AppHeaderProps {
+  builderMode: BuilderMode;
+  onBuilderModeChange: (mode: BuilderMode) => void;
+  lockedMode?: BuilderMode | null;
+  lockedChannel?: Platform | null;
+}
+
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
