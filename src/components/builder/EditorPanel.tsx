@@ -597,6 +597,9 @@ export default function EditorPanel() {
               Кнопок нет. Нажмите «Добавить ряд», чтобы построить клавиатуру (до 24 рядов, до 6 колонок в строке).
             </p>
           )}
+          <p className="text-[11px] text-muted-foreground mb-2">
+            Максимум 6 колонок в ряду — лишние кнопки в Viber попадут на новую строку.
+          </p>
           <div className="space-y-3">
             {viberKb.rows.map((row, rIdx) => {
               const sumCols = row.buttons.reduce((s, b) => s + (b.columns || 0), 0);
