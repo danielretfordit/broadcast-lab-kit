@@ -323,9 +323,11 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                   <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap break-all [overflow-wrap:anywhere] min-h-[48px]">
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
-                  <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    {isSms ? <>кодировка <span className="font-mono">{info.encoding}</span></> : <>Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span></>}
-                  </p>
+                  {!isSms && (
+                    <p className="mt-1.5 text-[10px] text-muted-foreground">
+                      Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                    </p>
+                  )}
                 </div>
               );
             })()}
