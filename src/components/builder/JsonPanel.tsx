@@ -259,14 +259,16 @@ export default function JsonPanel() {
       )}
 
       {/* Footer info */}
-      <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>
-          {isTelegram ? 'Telegram Bot API' : isViber ? 'Viber/SMS Provider' : 'MAX API'} • {message.parseMode}
-        </span>
-        <span>
-          {isTelegram ? getTelegramMethod(message) : isViber ? `route: ${message.viberRoute || 'viber(60)-sms'}` : 'messages/send'}
-        </span>
-      </div>
+      {!isSms && (
+        <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>
+            {isTelegram ? 'Telegram Bot API' : isViber ? 'Viber/SMS Provider' : 'MAX API'} • {message.parseMode}
+          </span>
+          <span>
+            {isTelegram ? getTelegramMethod(message) : isViber ? `route: ${message.viberRoute || 'viber(60)-sms'}` : 'messages/send'}
+          </span>
+        </div>
+      )}
 
       {/* Settings + Test bar (subtle) */}
       <div className="px-3 py-2 border-t border-border bg-muted/30 flex items-center justify-between">
