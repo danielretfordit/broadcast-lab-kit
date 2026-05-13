@@ -186,14 +186,17 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
         ) : (
           <>
             <div className="flex items-center gap-2 mb-4">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-                isTelegram ? 'bg-[hsl(200,80%,50%)]' : (isViber || isViberBot) ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
-              }`}>
-                {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
-                {isViber && <MessageSquare size={14} className="text-white" />}
-                {isViberBot && <ViberBrandIcon className="w-4 h-4 text-white" />}
-                {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
-              </div>
+              {isViberBot ? (
+                <ViberBrandIcon className="w-8 h-8" style={{ color: '#7360F2' }} />
+              ) : (
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
+                  isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
+                }`}>
+                  {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
+                  {isViber && <MessageSquare size={14} className="text-white" />}
+                  {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
+                </div>
+              )}
               <div>
                 <p className="text-sm font-semibold text-foreground">{platformLabel} Preview</p>
                 <p className="text-[10px] text-success font-medium">online</p>
