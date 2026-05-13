@@ -334,10 +334,12 @@ export function parseEmailJson(parsed: Record<string, unknown>): Partial<Message
 }
 
 export function parseViberJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const rawRoute = typeof parsed.route === 'string' ? parsed.route : 'viber(60)-sms';
+  const normalizedRoute = rawRoute === 'viber' ? 'viber-only' : rawRoute === 'sms' ? 'sms-only' : rawRoute;
   const result: Partial<MessageData> = {
     text: typeof parsed.message === 'string' ? parsed.message : '',
     smsText: typeof parsed.param_sms === 'string' ? parsed.param_sms : '',
-    viberRoute: typeof parsed.route === 'string' ? parsed.route : 'viber(60)-sms',
+    viberRoute: normalizedRoute,
     parseMode: 'Markdown',
     mediaUrls: [],
     buttonRows: [],
