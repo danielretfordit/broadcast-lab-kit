@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { loadDraft } from '@/contexts/MessageContext';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildViberBotJson, buildSmsJson, MessageData, Platform } from '@/lib/message-builder';
+import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildViberBotJson, buildSmsJson, buildWhatsAppJson, MessageData, Platform } from '@/lib/message-builder';
 import maxLogo from '@/assets/max-logo.png';
 import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
+import WhatsAppBrandIcon from '@/components/icons/WhatsAppBrandIcon';
 import { Clock } from 'lucide-react';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
@@ -23,9 +24,23 @@ const PLATFORMS: { key: Platform; label: string; paid?: boolean; dialog24h?: boo
   { key: 'max', label: 'MAX' },
   { key: 'viber_business', label: 'Viber Business / SMS', paid: true },
   { key: 'viber_bot', label: 'Viber', dialog24h: true },
+  { key: 'whatsapp', label: 'WhatsApp', dialog24h: true },
   { key: 'sms', label: 'SMS', paid: true },
   { key: 'html', label: 'HTML (Email)' },
 ];
+
+function isWhatsAppFilled(m: MessageData): boolean {
+  const buttons = (m.buttonRows[0]?.buttons || []).filter(b => (b.text || '').trim());
+  if (buttons.length > 0) {
+    if (buttons.length > 3) return false;
+    if (!m.text.trim()) return false;
+    return true;
+  }
+  if (m.mediaType !== 'none') {
+    return !!m.mediaUrl.trim();
+  }
+  return !!m.text.trim();
+}
 
 function isFilled(m: MessageData): boolean {
   if (m.platform === 'sms') return !!(m.smsText && m.smsText.trim());
@@ -68,6 +83,7 @@ function buildFor(p: Platform, m: MessageData): object {
   if (p === 'viber_business') return buildViberJson(m);
   if (p === 'viber_bot') return buildViberBotJson(m);
   if (p === 'sms') return buildSmsJson(m);
+  if (p === 'whatsapp') return buildWhatsAppJson(m);
   return buildEmailJson(m);
 }
 
@@ -96,6 +112,9 @@ function PlatformIcon({ p }: { p: Platform }) {
   if (p === 'viber_bot') {
     return <ViberBrandIcon className="w-7 h-7" style={{ color: '#7360F2' }} />;
   }
+  if (p === 'whatsapp') {
+    return <WhatsAppBrandIcon className="w-7 h-7" style={{ color: '#25D366' }} />;
+  }
   if (p === 'sms') {
     return (
       <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
@@ -122,6 +141,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
       max: get('max'),
       viber_business: get('viber_business'),
       viber_bot: get('viber_bot'),
+      whatsapp: get('whatsapp'),
       sms: get('sms'),
       html: get('html'),
     };
@@ -132,12 +152,13 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
     max: isFilled(drafts.max),
     viber_business: isFilled(drafts.viber_business),
     viber_bot: isFilled(drafts.viber_bot),
+    whatsapp: isWhatsAppFilled(drafts.whatsapp),
     sms: isFilled(drafts.sms),
     html: isFilled(drafts.html),
   }), [drafts]);
 
   const [selected, setSelected] = useState<Record<Platform, boolean>>({
-    telegram: true, max: true, viber_business: true, viber_bot: true, sms: true, html: true,
+    telegram: true, max: true, viber_business: true, viber_bot: true, whatsapp: true, sms: true, html: true,
   });
 
   // Reset selection on open based on filled state
@@ -148,6 +169,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
         max: filledMap.max,
         viber_business: filledMap.viber_business,
         viber_bot: filledMap.viber_bot,
+        whatsapp: filledMap.whatsapp,
         sms: filledMap.sms,
         html: filledMap.html,
       });
