@@ -149,15 +149,15 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
               {isViberBot ? 'Receiver ID (service_user_id)' : isMax ? 'Chat ID (user_id для теста)' : 'Chat ID для теста'}
             </label>
             <input
-              type="text"
+              type={isViberBot ? 'password' : 'text'}
               value={chatId}
               onChange={e => setChatId(e.target.value)}
-              placeholder={isViberBot ? '+obG7HH+y/Ya8fgjKZUw7w==' : 'ID'}
+              placeholder={isViberBot ? '••••••••••••••••••••••••' : 'ID'}
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
             <p className="text-[10px] text-muted-foreground mt-1.5">
               {isViberBot
-                ? 'service_user_id (Base64) подписчика бота — куда отправлять тест.'
+                ? 'Уникальный идентификатор получателя (Base64), выдаётся Viber API.'
                 : 'Используется только при отправке тестового сообщения.'}
             </p>
           </div>
