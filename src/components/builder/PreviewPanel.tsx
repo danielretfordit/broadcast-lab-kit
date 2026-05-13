@@ -9,6 +9,7 @@ import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
 import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
+import WhatsAppBrandIcon from '@/components/icons/WhatsAppBrandIcon';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
