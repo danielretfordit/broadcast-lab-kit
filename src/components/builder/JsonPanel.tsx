@@ -297,10 +297,10 @@ export default function JsonPanel() {
       {!isSms && !isViber && (
         <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
           <span>
-            {isTelegram ? 'Telegram Bot API' : isViberBot ? 'Viber REST API' : 'MAX API'} • {message.parseMode}
+            {isTelegram ? 'Telegram Bot API' : isViberBot ? 'Viber REST API' : isWhatsApp ? 'Tyntec API' : 'MAX API'} • {message.parseMode}
           </span>
           <span>
-            {isTelegram ? getTelegramMethod(message) : isViberBot ? 'pa/send_message' : 'messages/send'}
+            {isTelegram ? getTelegramMethod(message) : isViberBot ? 'pa/send_message' : isWhatsApp ? 'conversations/v3/messages' : 'messages/send'}
           </span>
         </div>
       )}
