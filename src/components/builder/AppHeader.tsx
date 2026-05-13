@@ -2,7 +2,7 @@ import { useMessage } from '@/contexts/MessageContext';
 import { useEffect } from 'react';
 import { Platform , parseJsonToMessage } from '@/lib/message-builder';
 import { useProjectInfo } from '@/hooks/useProjectInfo';
-import { Info, Code2, Megaphone, Mail, RotateCcw, Lock, Coins } from 'lucide-react';
+import { Info, Code2, Megaphone, Mail, RotateCcw, Lock, Coins, Clock } from 'lucide-react';
 import maxLogo from '@/assets/max-logo.png';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -50,8 +50,9 @@ function ViberBusinessIcon({ className }: { className?: string }) {
 const platforms: PlatformTab[] = [
   { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
   { id: 'max', label: 'MAX', logo: maxLogo },
-  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
-  { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-4 h-4', paid: true },
+  { id: 'viber_business', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
+  { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-5 h-5', paid: true },
+  { id: 'viber_bot', label: 'Viber', CustomIcon: ViberBrandIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
@@ -257,10 +258,9 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
             );
           })}
 
-          {/* Disabled channels */}
+          {/* Disabled channels with 24h dialog window */}
           {([
-            { id: 'viber-personal', label: 'Viber', Icon: ViberBrandIcon, paid: false },
-            { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
+            { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
               <TooltipTrigger asChild>
@@ -271,11 +271,15 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                 >
                   <ch.Icon className="w-4 h-4" />
                   {ch.label}
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold leading-none">
+                    <Clock size={9} /> 24h
+                  </span>
                   <Lock size={10} className="ml-0.5" />
-                  {ch.paid && <Coins size={10} className="text-amber-500/70" />}
                 </button>
               </TooltipTrigger>
-              <TooltipContent>Недоступно</TooltipContent>
+              <TooltipContent>
+                Окно 24 часа: можно писать только в течение 24 ч после последнего сообщения пользователя. Канал пока недоступен.
+              </TooltipContent>
             </Tooltip>
           ))}
         </div>
