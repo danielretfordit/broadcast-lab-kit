@@ -1,6 +1,6 @@
 import { escapeMarkdownV2Plain, prepareMarkdownV2 } from '@/lib/markdown';
 
-export type Platform = 'telegram' | 'max' | 'html' | 'viber_business' | 'sms' | 'viber_bot';
+export type Platform = 'telegram' | 'max' | 'html' | 'viber_business' | 'sms' | 'viber_bot' | 'whatsapp';
 
 export interface InlineButton {
   id: string;
@@ -56,6 +56,10 @@ export interface MessageData {
   viberBotSenderName?: string;
   viberBotTrackingData?: string;
   viberKeyboard?: ViberKeyboard;
+  // WhatsApp
+  whatsappHeader?: string;
+  whatsappFooter?: string;
+  whatsappFilename?: string;
 }
 
 export const VIBER_BTN_BG = '#FF7300';
@@ -261,6 +265,7 @@ export function buildJson(msg: MessageData): object {
   if (msg.platform === 'viber_business') return buildViberJson(msg);
   if (msg.platform === 'viber_bot') return buildViberBotJson(msg);
   if (msg.platform === 'sms') return buildSmsJson(msg);
+  if (msg.platform === 'whatsapp') return buildWhatsAppJson(msg);
   return buildEmailJson(msg);
 }
 
@@ -303,7 +308,7 @@ function buildViberKeyboard(kb?: ViberKeyboard): Record<string, unknown> | null 
 export function buildViberBotJson(msg: MessageData): object {
   const base: Record<string, unknown> = {
     receiver: '<service_user_id>',
-    min_api_version: 1,
+    min_api_version: 4,
     sender: { name: msg.viberBotSenderName || 'ARMTEK | ЧАТ-БОТ | BY' },
     tracking_data: msg.viberBotTrackingData || 'tracking data',
     text: msg.text || '',
@@ -378,6 +383,137 @@ export function parseViberBotJson(parsed: Record<string, unknown>): Partial<Mess
 
   return result;
 }
+
+// ============================================================
+// WhatsApp (tyntec)
+// ============================================================
+
+export function buildWhatsAppJson(msg: MessageData): object {
+  const buttons = (msg.buttonRows[0]?.buttons || []).slice(0, 3);
+  const hasButtons = buttons.length > 0;
+
+  const base: Record<string, unknown> = {
+    from: '*****',
+    to: '<service_user_id>',
+    channel: 'whatsapp',
+  };
+
+  if (hasButtons) {
+    const components: Record<string, unknown> = {
+      body: { type: 'text', text: msg.text || '' },
+    };
+    if (msg.whatsappHeader && msg.whatsappHeader.trim()) {
+      components.header = { type: 'text', text: msg.whatsappHeader };
+    }
+    if (msg.whatsappFooter && msg.whatsappFooter.trim()) {
+      components.footer = { type: 'text', text: msg.whatsappFooter };
+    }
+    components.buttons = buttons.map(b => ({
+      type: 'reply',
+      reply: {
+        payload: b.callback_data || b.id,
+        title: b.text || '',
+      },
+    }));
+
+    base.content = {
+      contentType: 'interactive',
+      interactive: {
+        subType: 'buttons',
+        components,
+      },
+    };
+    return base;
+  }
+
+  // Non-interactive
+  if (msg.mediaType === 'photo' && msg.mediaUrl) {
+    base.content = {
+      contentType: 'image',
+      image: { caption: msg.text || '', url: msg.mediaUrl },
+    };
+  } else if (msg.mediaType === 'video' && msg.mediaUrl) {
+    base.content = {
+      contentType: 'video',
+      video: { caption: msg.text || '', url: msg.mediaUrl },
+    };
+  } else if (msg.mediaType === 'document' && msg.mediaUrl) {
+    const doc: Record<string, unknown> = { url: msg.mediaUrl };
+    if (msg.text) doc.caption = msg.text;
+    if (msg.whatsappFilename) doc.filename = msg.whatsappFilename;
+    base.content = { contentType: 'document', document: doc };
+  } else {
+    base.content = { contentType: 'text', text: msg.text || '' };
+  }
+  return base;
+}
+
+export function parseWhatsAppJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const result: Partial<MessageData> = {
+    text: '',
+    parseMode: 'Markdown',
+    mediaType: 'none',
+    mediaUrl: '',
+    mediaUrls: [],
+    buttonRows: [],
+    whatsappHeader: '',
+    whatsappFooter: '',
+    whatsappFilename: '',
+  };
+  const content = parsed.content as Record<string, unknown> | undefined;
+  if (!content) return result;
+  const ct = String(content.contentType || 'text');
+  if (ct === 'text') {
+    result.text = typeof content.text === 'string' ? content.text : '';
+  } else if (ct === 'image') {
+    const img = content.image as Record<string, unknown> | undefined;
+    if (img) {
+      result.mediaType = 'photo';
+      result.mediaUrl = typeof img.url === 'string' ? img.url : '';
+      result.text = typeof img.caption === 'string' ? img.caption : '';
+    }
+  } else if (ct === 'video') {
+    const v = content.video as Record<string, unknown> | undefined;
+    if (v) {
+      result.mediaType = 'video';
+      result.mediaUrl = typeof v.url === 'string' ? v.url : '';
+      result.text = typeof v.caption === 'string' ? v.caption : '';
+    }
+  } else if (ct === 'document') {
+    const d = content.document as Record<string, unknown> | undefined;
+    if (d) {
+      result.mediaType = 'document';
+      result.mediaUrl = typeof d.url === 'string' ? d.url : '';
+      result.text = typeof d.caption === 'string' ? d.caption : '';
+      result.whatsappFilename = typeof d.filename === 'string' ? d.filename : '';
+    }
+  } else if (ct === 'interactive') {
+    const it = content.interactive as Record<string, unknown> | undefined;
+    const comps = it?.components as Record<string, unknown> | undefined;
+    if (comps) {
+      const header = comps.header as Record<string, unknown> | undefined;
+      const body = comps.body as Record<string, unknown> | undefined;
+      const footer = comps.footer as Record<string, unknown> | undefined;
+      if (header && typeof header.text === 'string') result.whatsappHeader = header.text;
+      if (body && typeof body.text === 'string') result.text = body.text;
+      if (footer && typeof footer.text === 'string') result.whatsappFooter = footer.text;
+      const btns = Array.isArray(comps.buttons) ? comps.buttons as Record<string, unknown>[] : [];
+      const buttons: InlineButton[] = btns.map(b => {
+        const reply = b.reply as Record<string, unknown> | undefined;
+        return {
+          id: generateId(),
+          text: typeof reply?.title === 'string' ? reply.title : '',
+          callback_data: typeof reply?.payload === 'string' ? reply.payload : '',
+        };
+      });
+      if (buttons.length > 0) {
+        result.buttonRows = [{ id: generateId(), buttons }];
+      }
+    }
+  }
+  return result;
+}
+
 export function getTelegramMethod(msg: MessageData): string {
   if (msg.mediaType === 'album') return 'sendMediaGroup';
   if (msg.mediaType !== 'none' && msg.mediaUrl) {
@@ -550,6 +686,7 @@ export function parseJsonToMessage(jsonStr: string, platform: Platform): Partial
   if (platform === 'viber_business') return parseViberJson(parsed);
   if (platform === 'viber_bot') return parseViberBotJson(parsed);
   if (platform === 'sms') return parseSmsJson(parsed);
+  if (platform === 'whatsapp') return parseWhatsAppJson(parsed);
   return parseEmailJson(parsed);
 }
 
