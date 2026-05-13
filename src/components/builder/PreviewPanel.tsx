@@ -306,6 +306,12 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 ⚠ Inline-кнопки не отправляются вместе с альбомом фото
               </div>
             )}
+
+            {isViberBot && message.viberKeyboard && message.viberKeyboard.rows.length > 0 && (
+              <div className="mt-2 max-w-xl">
+                <ViberKeyboardPreview rows={message.viberKeyboard.rows} />
+              </div>
+            )}
             </>)}
 
             {((isViber && routeHasSms) || isSms) && (() => {
