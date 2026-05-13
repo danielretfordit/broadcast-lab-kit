@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { ExternalLink, Save, Loader2, MoreVertical, Layers } from 'lucide-react';
+import { ExternalLink, Save, Loader2, MoreVertical, Layers, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
 import { buildJson } from '@/lib/message-builder';
+import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
 
@@ -22,17 +23,21 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
+  const isViberPlatform = message.platform === 'viber';
   const mediaInvalid =
     !isHtmlPlatform &&
     ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2));
   const textEmpty = !message.text.trim();
+  const smsEmpty = !(message.smsText && message.smsText.trim());
   const hasValidMedia =
     (message.mediaType !== 'none' && message.mediaType !== 'album' && !!message.mediaUrl.trim()) ||
     (isAlbum && albumUrls.length >= 2);
   const emptyTemplate = isHtmlPlatform
     ? (!message.subject.trim() || textEmpty)
-    : (textEmpty && !hasValidMedia);
+    : isViberPlatform
+      ? (textEmpty && smsEmpty)
+      : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
@@ -73,7 +78,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
       type Block = { kind: 'quote'; lines: string[] } | { kind: 'text'; lines: string[] } | { kind: 'h'; level: number; content: string };
       const blocks: Block[] = [];
       for (const ln of lines) {
-        const hMatch = /^(#{1,3})\s+(.*)$/.exec(ln);
+        const hMatch = message.platform === 'max' ? /^(#{1,3})\s+(.*)$/.exec(ln) : null;
         if (hMatch) {
           blocks.push({ kind: 'h', level: hMatch[1].length, content: hMatch[2] });
           continue;
@@ -103,6 +108,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
 
   const isTelegram = message.platform === 'telegram';
   const isHtml = message.platform === 'html';
+  const isViber = message.platform === 'viber';
 
   const handleSaveToProject = async () => {
     const guid = searchParams.get('guid');
@@ -138,8 +144,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     }
   };
 
-  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : 'MAX';
-  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml ? null : maxLogo;
+  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : 'MAX';
+  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber ? null : maxLogo;
 
   return (
     <div className="flex flex-col h-full">
@@ -163,9 +169,10 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           <>
             <div className="flex items-center gap-2 mb-4">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-                isTelegram ? 'bg-[hsl(200,80%,50%)]' : 'bg-secondary'
+                isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : 'bg-secondary'
               }`}>
                 {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
+                {isViber && <MessageSquare size={14} className="text-white" />}
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">{platformLabel} Preview</p>
@@ -278,6 +285,34 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             )}
 
+            {isViber && (() => {
+              const info = smsParts(message.smsText || '');
+              const tone =
+                info.parts === 0 ? 'text-muted-foreground'
+                : info.parts <= 1 ? 'text-success'
+                : info.parts <= 3 ? 'text-warning'
+                : 'text-destructive';
+              return (
+                <div className="mt-4 max-w-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                      <MessageSquare size={12} className="text-muted-foreground" />
+                    </div>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">SMS-фолбэк</p>
+                    <span className={`ml-auto text-[11px] font-semibold ${tone}`}>
+                      {info.len} симв. • {info.parts} SMS
+                    </span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap min-h-[48px]">
+                    {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
+                  </div>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    Маршрут: <span className="font-mono">{message.viberRoute || 'viber(60)-sms'}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                  </p>
+                </div>
+              );
+            })()}
+
             {!viewOnly && (
               <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
                 <span className="font-semibold">API Method: </span>
@@ -287,7 +322,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     : message.mediaType !== 'none' && message.mediaUrl
                       ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
                       : 'sendMessage'
-                  : 'POST /messages'}
+                  : isViber
+                    ? `Provider · route: ${message.viberRoute || 'viber(60)-sms'}`
+                    : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>

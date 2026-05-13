@@ -4,6 +4,7 @@ import { MessageData, createEmptyMessage, Platform } from '@/lib/message-builder
 function defaultParseMode(platform: Platform): MessageData['parseMode'] {
   if (platform === 'html') return 'HTML';
   if (platform === 'max') return 'Markdown';
+  if (platform === 'viber') return 'Markdown';
   return 'MarkdownV2';
 }
 
@@ -24,6 +25,7 @@ export function loadDraft(platform: Platform): MessageData {
       // Force correct parseMode per platform (no HTML for messengers)
       if (platform === 'telegram') merged.parseMode = 'MarkdownV2';
       else if (platform === 'max') merged.parseMode = 'Markdown';
+      else if (platform === 'viber') merged.parseMode = 'Markdown';
       else if (platform === 'html') merged.parseMode = 'HTML';
       return merged;
     }

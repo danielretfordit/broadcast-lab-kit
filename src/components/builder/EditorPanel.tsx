@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
 import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
-import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading } from 'lucide-react';
+import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HtmlCodeEditor from './HtmlCodeEditor';
+import { smsParts } from '@/lib/sms';
 
 export default function EditorPanel() {
   const { message, updateField } = useMessage();
@@ -13,6 +14,8 @@ export default function EditorPanel() {
   const [showAi, setShowAi] = useState(false);
 
   const isHtml = message.platform === 'html';
+  const isViber = message.platform === 'viber';
+  const isMax = message.platform === 'max';
   const isAlbum = message.mediaType === 'album';
   const albumUrls = message.mediaUrls || [];
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
@@ -43,10 +46,10 @@ export default function EditorPanel() {
         wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
       }
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
-      const isMax = message.platform === 'max';
-      if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
-      else if (tag === 'italic') wrapped = isMax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
-      else if (tag === 'underline') wrapped = isMax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
+      const useMaxSyntax = message.platform === 'max' || message.platform === 'viber';
+      if (tag === 'bold') wrapped = useMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
+      else if (tag === 'italic') wrapped = useMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
+      else if (tag === 'underline') wrapped = useMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
       else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
@@ -102,13 +105,18 @@ export default function EditorPanel() {
     ).filter(r => r.buttons.length > 0));
   };
 
-  const mediaTypes = [
-    { id: 'none' as const, icon: null, label: 'Нет' },
-    { id: 'photo' as const, icon: Image, label: 'Фото' },
-    { id: 'video' as const, icon: Video, label: 'Видео' },
-    { id: 'document' as const, icon: FileText, label: 'Файл' },
-    { id: 'album' as const, icon: Images, label: 'Альбом' },
-  ];
+  const mediaTypes = isViber
+    ? [
+        { id: 'none' as const, icon: null, label: 'Нет' },
+        { id: 'photo' as const, icon: Image, label: 'Фото' },
+      ]
+    : [
+        { id: 'none' as const, icon: null, label: 'Нет' },
+        { id: 'photo' as const, icon: Image, label: 'Фото' },
+        { id: 'video' as const, icon: Video, label: 'Видео' },
+        { id: 'document' as const, icon: FileText, label: 'Файл' },
+        { id: 'album' as const, icon: Images, label: 'Альбом' },
+      ];
 
   const updateAlbumUrl = (idx: number, value: string) => {
     const next = [...albumUrls];
@@ -319,7 +327,7 @@ export default function EditorPanel() {
               { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
               { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
               { tag: 'link', icon: Link, title: 'Ссылка' },
-              { tag: 'heading', icon: Heading, title: 'Заголовок' },
+              ...(isMax ? [{ tag: 'heading', icon: Heading, title: 'Заголовок' }] : []),
               { tag: 'quote', icon: Quote, title: 'Цитата' },
             ].map(({ tag, icon: Icon, title }) => (
               <button
@@ -348,9 +356,9 @@ export default function EditorPanel() {
             onChange={e => updateField('text', e.target.value)}
             placeholder={
               message.parseMode === 'MarkdownV2'
-                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n# Заголовок\n> Цитата'
+                ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
                 : message.parseMode === 'Markdown'
-                  ? '**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ `код`\n[ссылка](https://...)\n# Заголовок\n> Цитата'
+                  ? `**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\`\n[ссылка](https://...)${isMax ? '\n# Заголовок' : ''}\n> Цитата`
                   : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
@@ -397,20 +405,33 @@ export default function EditorPanel() {
       {!isHtml && (
         <section>
           <div className="flex items-center justify-between mb-2">
-            <label className="section-label !mb-0">Inline кнопки</label>
-            <button
-              type="button"
-              onClick={addButtonRow}
-              className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
-            >
-              <Plus size={12} /> Добавить ряд
-            </button>
+            <label className="section-label !mb-0">
+              {isViber ? 'Кнопка (одна)' : 'Inline кнопки'}
+            </label>
+            {!isViber && (
+              <button
+                type="button"
+                onClick={addButtonRow}
+                className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
+              >
+                <Plus size={12} /> Добавить ряд
+              </button>
+            )}
+            {isViber && message.buttonRows.length === 0 && (
+              <button
+                type="button"
+                onClick={addButtonRow}
+                className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
+              >
+                <Plus size={12} /> Добавить кнопку
+              </button>
+            )}
           </div>
 
           <div className="space-y-3">
-            {message.buttonRows.map(row => (
+            {(isViber ? message.buttonRows.slice(0, 1) : message.buttonRows).map(row => (
               <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
-                {row.buttons.map(btn => (
+                {(isViber ? row.buttons.slice(0, 1) : row.buttons).map(btn => (
                   <div key={btn.id} className="flex items-start gap-2">
                     <div className="flex-1 space-y-1.5">
                       <input
@@ -437,26 +458,84 @@ export default function EditorPanel() {
                     </button>
                   </div>
                 ))}
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    type="button"
-                    onClick={() => addButtonToRow(row.id)}
-                    className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
-                  >
-                    + Кнопка
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeButtonRow(row.id)}
-                    className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors"
-                  >
-                    Удалить
-                  </button>
-                </div>
+                {!isViber && (
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => addButtonToRow(row.id)}
+                      className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
+                    >
+                      + Кнопка
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeButtonRow(row.id)}
+                      className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </section>
+      )}
+
+      {/* Viber: SMS fallback + route */}
+      {isViber && (
+        <>
+          <section>
+            <label className="section-label flex items-center gap-1.5">
+              <MessageSquare size={12} /> SMS-сообщение (фолбэк)
+            </label>
+            {(() => {
+              const info = smsParts(message.smsText || '');
+              const tone =
+                info.parts <= 1 ? 'text-success'
+                : info.parts <= 3 ? 'text-warning'
+                : 'text-destructive';
+              return (
+                <>
+                  <textarea
+                    value={message.smsText || ''}
+                    onChange={e => updateField('smsText', e.target.value)}
+                    placeholder="Короткий текст для SMS, если Viber не доставлен..."
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[90px]"
+                  />
+                  <div className="flex items-center justify-between mt-1.5 text-[11px]">
+                    <span className="text-muted-foreground">
+                      Кодировка: <span className="font-mono">{info.encoding}</span> ({info.encoding === 'UCS2' ? 'кириллица' : 'латиница'})
+                    </span>
+                    <span className={`${tone} font-semibold`}>
+                      {info.len} симв. • {info.parts} SMS
+                      {info.parts > 0 && (
+                        <span className="text-muted-foreground font-normal"> · до конца части: {info.remaining}</span>
+                      )}
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
+          </section>
+
+          <section>
+            <label className="section-label">Маршрут отправки</label>
+            <select
+              value={message.viberRoute || 'viber(60)-sms'}
+              onChange={e => updateField('viberRoute', e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            >
+              <option value="viber(60)-sms">viber(60)-sms — Viber, через 60 сек SMS</option>
+              <option value="viber(30)-sms">viber(30)-sms — Viber, через 30 сек SMS</option>
+              <option value="viber-only">viber-only — только Viber</option>
+              <option value="sms-only">sms-only — только SMS</option>
+            </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Провайдер сам выберет канал доставки и при недоставке Viber переключится на SMS.
+            </p>
+          </section>
+        </>
       )}
     </div>
   );
