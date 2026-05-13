@@ -262,13 +262,32 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               )}
 
               <div className="px-4 py-3 text-sm leading-relaxed text-foreground break-words [overflow-wrap:anywhere]">
+                {isWhatsAppPlatform && waHasInteractive && message.whatsappHeader?.trim() && (
+                  <div className="font-bold text-foreground mb-1">{message.whatsappHeader}</div>
+                )}
                 {renderText(message.text)}
+                {isWhatsAppPlatform && waHasInteractive && message.whatsappFooter?.trim() && (
+                  <div className="text-[11px] text-muted-foreground mt-2">{message.whatsappFooter}</div>
+                )}
                 {!viewOnly && (
                   <div className="text-right mt-2">
                     <span className="text-[10px] text-muted-foreground">15:00 ✓✓</span>
                   </div>
                 )}
               </div>
+              {isWhatsAppPlatform && waHasInteractive && (
+                <div className="border-t border-border bg-card">
+                  {waButtonsList.map(btn => (
+                    <button
+                      key={btn.id}
+                      type="button"
+                      className="w-full py-2.5 text-sm font-medium text-[#25D366] hover:bg-muted/40 border-t border-border first:border-t-0"
+                    >
+                      {btn.text}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {!isAlbum && message.buttonRows.length > 0 && (
