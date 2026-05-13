@@ -7,6 +7,7 @@ function defaultParseMode(platform: Platform): MessageData['parseMode'] {
   if (platform === 'viber_business') return 'Markdown';
   if (platform === 'viber_bot') return 'Markdown';
   if (platform === 'sms') return 'Markdown';
+  if (platform === 'whatsapp') return 'Markdown';
   return 'MarkdownV2';
 }
 
