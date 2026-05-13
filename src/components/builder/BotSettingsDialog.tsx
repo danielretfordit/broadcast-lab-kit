@@ -6,8 +6,9 @@ import { Lock, Trash2 } from 'lucide-react';
 const STORAGE_KEY_PREFIX = 'bot-settings:';
 const CHAT_ID_PREFIX = 'bot-settings:chatId:';
 const VIBER_SENDER_KEY = 'bot-settings:viber_bot:sender';
+const WA_SENDER_KEY = 'bot-settings:whatsapp:sender';
 
-type BotPlatform = 'telegram' | 'max' | 'viber_bot';
+type BotPlatform = 'telegram' | 'max' | 'viber_bot' | 'whatsapp';
 
 export function getBotToken(platform: BotPlatform): string | null {
   try {
@@ -33,6 +34,14 @@ export function getViberBotSender(): string | null {
   }
 }
 
+export function getWhatsAppSender(): string | null {
+  try {
+    return sessionStorage.getItem(WA_SENDER_KEY);
+  } catch {
+    return null;
+  }
+}
+
 interface BotSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,29 +53,36 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
   const [chatId, setChatId] = useState('');
   const [sender, setSender] = useState('');
 
+  const isMax = platform === 'max';
+  const isViberBot = platform === 'viber_bot';
+  const isWhatsApp = platform === 'whatsapp';
+
   useEffect(() => {
     if (open) {
       setToken(getBotToken(platform) || '');
       setChatId(getTestChatId(platform) || '');
-      setSender(getViberBotSender() || (platform === 'viber_bot' ? 'ARMTEK | ЧАТ-БОТ | BY' : ''));
+      if (isViberBot) {
+        setSender(getViberBotSender() || 'ARMTEK | ЧАТ-БОТ | BY');
+      } else if (isWhatsApp) {
+        setSender(getWhatsAppSender() || '');
+      } else {
+        setSender('');
+      }
     }
-  }, [open, platform]);
+  }, [open, platform, isViberBot, isWhatsApp]);
 
   const save = () => {
     try {
-      if (token.trim()) {
-        sessionStorage.setItem(`${STORAGE_KEY_PREFIX}${platform}`, token.trim());
-      } else {
-        sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`);
-      }
-      if (chatId.trim()) {
-        sessionStorage.setItem(`${CHAT_ID_PREFIX}${platform}`, chatId.trim());
-      } else {
-        sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
-      }
-      if (platform === 'viber_bot') {
+      if (token.trim()) sessionStorage.setItem(`${STORAGE_KEY_PREFIX}${platform}`, token.trim());
+      else sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`);
+      if (chatId.trim()) sessionStorage.setItem(`${CHAT_ID_PREFIX}${platform}`, chatId.trim());
+      else sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
+      if (isViberBot) {
         if (sender.trim()) sessionStorage.setItem(VIBER_SENDER_KEY, sender.trim());
         else sessionStorage.removeItem(VIBER_SENDER_KEY);
+      } else if (isWhatsApp) {
+        if (sender.trim()) sessionStorage.setItem(WA_SENDER_KEY, sender.trim());
+        else sessionStorage.removeItem(WA_SENDER_KEY);
       }
       toast.success('Сохранено в этой сессии');
       onOpenChange(false);
@@ -82,14 +98,57 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
     try {
       sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`);
       sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
-      if (platform === 'viber_bot') sessionStorage.removeItem(VIBER_SENDER_KEY);
+      if (isViberBot) sessionStorage.removeItem(VIBER_SENDER_KEY);
+      if (isWhatsApp) sessionStorage.removeItem(WA_SENDER_KEY);
     } catch {}
     toast.success('Очищено');
   };
 
-  const isMax = platform === 'max';
-  const isViberBot = platform === 'viber_bot';
-  const title = isViberBot ? 'Viber бота' : isMax ? 'MAX бота' : 'Telegram бота';
+  const title = isViberBot ? 'Viber бота' : isMax ? 'MAX бота' : isWhatsApp ? 'WhatsApp' : 'Telegram бота';
+
+  const tokenLabel = isViberBot
+    ? 'Auth Token (X-Viber-Auth-Token)'
+    : isMax
+      ? 'Access Token'
+      : isWhatsApp
+        ? 'API Token (apikey)'
+        : 'Bot Token';
+
+  const tokenPlaceholder = isViberBot
+    ? 'aaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-cccccccccccccccc'
+    : isMax
+      ? 'f9LHodD0cOIR5XiHPjx5...'
+      : isWhatsApp
+        ? 'Tyntec apikey'
+        : '123456:AAH...';
+
+  const tokenHint = isViberBot
+    ? 'Токен авторизации из кабинета Viber'
+    : isMax
+      ? 'Укажите Access Token, выданный платформой MAX'
+      : isWhatsApp
+        ? 'Tyntec API key (заголовок apikey)'
+        : 'Получите токен у @BotFather в Telegram';
+
+  const receiverLabel = isViberBot
+    ? 'Receiver ID (service_user_id)'
+    : isMax
+      ? 'Chat ID (user_id для теста)'
+      : isWhatsApp
+        ? 'Receiver ID (to)'
+        : 'Chat ID для теста';
+
+  const receiverPlaceholder = isViberBot
+    ? '••••••••••••••••••••••••'
+    : isWhatsApp
+      ? '79991234567'
+      : 'ID';
+
+  const receiverHint = isViberBot
+    ? 'Уникальный идентификатор получателя (Base64), выдаётся Viber API.'
+    : isWhatsApp
+      ? 'Номер получателя в формате E.164 без «+» (например, 79991234567).'
+      : 'Используется только при отправке тестового сообщения.';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,23 +166,15 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
 
         <div className="space-y-3 py-2">
           <div>
-            <label className="text-xs font-medium text-foreground mb-1.5 block">
-              {isViberBot ? 'Auth Token (X-Viber-Auth-Token)' : isMax ? 'Access Token' : 'Bot Token'}
-            </label>
+            <label className="text-xs font-medium text-foreground mb-1.5 block">{tokenLabel}</label>
             <input
               type="password"
               value={token}
               onChange={e => setToken(e.target.value)}
-              placeholder={isViberBot ? 'aaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-cccccccccccccccc' : isMax ? 'f9LHodD0cOIR5XiHPjx5...' : '123456:AAH...'}
+              placeholder={tokenPlaceholder}
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50"
             />
-            <p className="text-[10px] text-muted-foreground mt-1.5">
-              {isViberBot
-                ? 'Токен авторизации из кабинета Viber'
-                : isMax
-                  ? 'Укажите Access Token, выданный платформой MAX'
-                  : 'Получите токен у @BotFather в Telegram'}
-            </p>
+            <p className="text-[10px] text-muted-foreground mt-1.5">{tokenHint}</p>
           </div>
 
           {isViberBot && (
@@ -144,22 +195,34 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
             </div>
           )}
 
+          {isWhatsApp && (
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1.5 block">
+                Sender ID (from)
+              </label>
+              <input
+                type="text"
+                value={sender}
+                onChange={e => setSender(e.target.value)}
+                placeholder="WABA номер отправителя"
+                className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Номер отправителя WhatsApp Business в формате E.164 без «+».
+              </p>
+            </div>
+          )}
+
           <div>
-            <label className="text-xs font-medium text-foreground mb-1.5 block">
-              {isViberBot ? 'Receiver ID (service_user_id)' : isMax ? 'Chat ID (user_id для теста)' : 'Chat ID для теста'}
-            </label>
+            <label className="text-xs font-medium text-foreground mb-1.5 block">{receiverLabel}</label>
             <input
               type={isViberBot ? 'password' : 'text'}
               value={chatId}
               onChange={e => setChatId(e.target.value)}
-              placeholder={isViberBot ? '••••••••••••••••••••••••' : 'ID'}
+              placeholder={receiverPlaceholder}
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
-            <p className="text-[10px] text-muted-foreground mt-1.5">
-              {isViberBot
-                ? 'Уникальный идентификатор получателя (Base64), выдаётся Viber API.'
-                : 'Используется только при отправке тестового сообщения.'}
-            </p>
+            <p className="text-[10px] text-muted-foreground mt-1.5">{receiverHint}</p>
           </div>
         </div>
 
