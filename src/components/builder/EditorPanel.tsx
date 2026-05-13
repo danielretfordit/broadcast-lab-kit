@@ -21,6 +21,9 @@ export default function EditorPanel() {
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
   const mediaUrlMissing = !isHtml && !isAlbum && message.mediaType !== 'none' && !message.mediaUrl.trim();
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
+  const viberRoute = message.viberRoute || 'viber(60)-sms';
+  const routeNeedsSms = isViber && viberRoute.includes('sms');
+  const smsMissing = routeNeedsSms && !(message.smsText || '').trim();
 
   const insertFormatting = (tag: string) => {
     const textarea = document.getElementById('msg-body') as HTMLTextAreaElement | null;
