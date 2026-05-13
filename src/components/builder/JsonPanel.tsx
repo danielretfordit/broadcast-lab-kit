@@ -21,6 +21,7 @@ export default function JsonPanel() {
   const isTelegram = message.platform === 'telegram';
   const isMax = message.platform === 'max';
   const isViber = message.platform === 'viber';
+  const isSms = message.platform === 'sms';
 
   useEffect(() => {
     if (!editMode) {
