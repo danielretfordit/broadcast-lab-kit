@@ -405,20 +405,33 @@ export default function EditorPanel() {
       {!isHtml && (
         <section>
           <div className="flex items-center justify-between mb-2">
-            <label className="section-label !mb-0">Inline кнопки</label>
-            <button
-              type="button"
-              onClick={addButtonRow}
-              className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
-            >
-              <Plus size={12} /> Добавить ряд
-            </button>
+            <label className="section-label !mb-0">
+              {isViber ? 'Кнопка (одна)' : 'Inline кнопки'}
+            </label>
+            {!isViber && (
+              <button
+                type="button"
+                onClick={addButtonRow}
+                className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
+              >
+                <Plus size={12} /> Добавить ряд
+              </button>
+            )}
+            {isViber && message.buttonRows.length === 0 && (
+              <button
+                type="button"
+                onClick={addButtonRow}
+                className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 transition-colors"
+              >
+                <Plus size={12} /> Добавить кнопку
+              </button>
+            )}
           </div>
 
           <div className="space-y-3">
-            {message.buttonRows.map(row => (
+            {(isViber ? message.buttonRows.slice(0, 1) : message.buttonRows).map(row => (
               <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
-                {row.buttons.map(btn => (
+                {(isViber ? row.buttons.slice(0, 1) : row.buttons).map(btn => (
                   <div key={btn.id} className="flex items-start gap-2">
                     <div className="flex-1 space-y-1.5">
                       <input
@@ -445,26 +458,84 @@ export default function EditorPanel() {
                     </button>
                   </div>
                 ))}
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    type="button"
-                    onClick={() => addButtonToRow(row.id)}
-                    className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
-                  >
-                    + Кнопка
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeButtonRow(row.id)}
-                    className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors"
-                  >
-                    Удалить
-                  </button>
-                </div>
+                {!isViber && (
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      type="button"
+                      onClick={() => addButtonToRow(row.id)}
+                      className="text-[11px] text-muted-foreground hover:text-primary font-medium transition-colors"
+                    >
+                      + Кнопка
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeButtonRow(row.id)}
+                      className="text-[11px] text-muted-foreground hover:text-destructive font-medium transition-colors"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </section>
+      )}
+
+      {/* Viber: SMS fallback + route */}
+      {isViber && (
+        <>
+          <section>
+            <label className="section-label flex items-center gap-1.5">
+              <MessageSquare size={12} /> SMS-сообщение (фолбэк)
+            </label>
+            {(() => {
+              const info = smsParts(message.smsText || '');
+              const tone =
+                info.parts <= 1 ? 'text-success'
+                : info.parts <= 3 ? 'text-warning'
+                : 'text-destructive';
+              return (
+                <>
+                  <textarea
+                    value={message.smsText || ''}
+                    onChange={e => updateField('smsText', e.target.value)}
+                    placeholder="Короткий текст для SMS, если Viber не доставлен..."
+                    className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[90px]"
+                  />
+                  <div className="flex items-center justify-between mt-1.5 text-[11px]">
+                    <span className="text-muted-foreground">
+                      Кодировка: <span className="font-mono">{info.encoding}</span> ({info.encoding === 'UCS2' ? 'кириллица' : 'латиница'})
+                    </span>
+                    <span className={`${tone} font-semibold`}>
+                      {info.len} симв. • {info.parts} SMS
+                      {info.parts > 0 && (
+                        <span className="text-muted-foreground font-normal"> · до конца части: {info.remaining}</span>
+                      )}
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
+          </section>
+
+          <section>
+            <label className="section-label">Маршрут отправки</label>
+            <select
+              value={message.viberRoute || 'viber(60)-sms'}
+              onChange={e => updateField('viberRoute', e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            >
+              <option value="viber(60)-sms">viber(60)-sms — Viber, через 60 сек SMS</option>
+              <option value="viber(30)-sms">viber(30)-sms — Viber, через 30 сек SMS</option>
+              <option value="viber-only">viber-only — только Viber</option>
+              <option value="sms-only">sms-only — только SMS</option>
+            </select>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Провайдер сам выберет канал доставки и при недоставке Viber переключится на SMS.
+            </p>
+          </section>
+        </>
       )}
     </div>
   );
