@@ -47,7 +47,7 @@ const platforms: PlatformTab[] = [
   { id: 'viber_business', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
   { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-5 h-5', paid: true },
   { id: 'viber_bot', label: 'Viber', CustomIcon: ViberBrandIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', dialog24h: true },
-  { id: 'whatsapp', label: 'WhatsApp', CustomIcon: WhatsAppIcon, iconColor: '#25D366', iconClassName: 'w-5 h-5', dialog24h: true },
+  { id: 'whatsapp', label: 'WhatsApp', CustomIcon: WhatsAppIcon, iconColor: '#25D366', iconClassName: 'w-4 h-4', dialog24h: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 

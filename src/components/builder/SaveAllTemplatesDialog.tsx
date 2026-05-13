@@ -26,7 +26,7 @@ const PLATFORMS: { key: Platform; label: string; paid?: boolean; dialog24h?: boo
   { key: 'viber_bot', label: 'Viber', dialog24h: true },
   { key: 'whatsapp', label: 'WhatsApp', dialog24h: true },
   { key: 'sms', label: 'SMS', paid: true },
-  { key: 'html', label: 'HTML (Email)' },
+  { key: 'html', label: 'Email (HTML)' },
 ];
 
 function isWhatsAppFilled(m: MessageData): boolean {
