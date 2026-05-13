@@ -23,6 +23,7 @@ export default function JsonPanel() {
   const isViber = message.platform === 'viber_business';
   const isViberBot = message.platform === 'viber_bot';
   const isSms = message.platform === 'sms';
+  const isWhatsApp = message.platform === 'whatsapp';
 
   useEffect(() => {
     if (!editMode) {
