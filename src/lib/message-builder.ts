@@ -60,6 +60,8 @@ export interface MessageData {
   whatsappHeader?: string;
   whatsappFooter?: string;
   whatsappFilename?: string;
+  // Viber bot
+  viberBotThumbnail?: string;
 }
 
 export const VIBER_BTN_BG = '#FF7300';
@@ -316,6 +318,9 @@ export function buildViberBotJson(msg: MessageData): object {
   if (msg.mediaType === 'photo' && msg.mediaUrl) {
     base.type = 'picture';
     base.media = msg.mediaUrl;
+    if (msg.viberBotThumbnail && msg.viberBotThumbnail.trim()) {
+      base.thumbnail = msg.viberBotThumbnail.trim();
+    }
   } else {
     base.type = 'text';
   }
@@ -341,6 +346,7 @@ export function parseViberBotJson(parsed: Record<string, unknown>): Partial<Mess
   if (media && type === 'picture') {
     result.mediaType = 'photo';
     result.mediaUrl = media;
+    if (typeof parsed.thumbnail === 'string') result.viberBotThumbnail = parsed.thumbnail;
   }
 
   const keyboard = parsed.keyboard as Record<string, unknown> | undefined;
