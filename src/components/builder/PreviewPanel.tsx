@@ -27,6 +27,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isHtmlPlatform = message.platform === 'html';
   const isViberPlatform = message.platform === 'viber_business';
   const isViberBotPlatform = message.platform === 'viber_bot';
+  const isWhatsAppPlatform = message.platform === 'whatsapp';
   const isSmsPlatform = message.platform === 'sms';
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeHasSms = (isViberPlatform && viberRoute.includes('sms')) || isSmsPlatform;
