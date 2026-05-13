@@ -233,7 +233,7 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {!isHtml && (
+      {!isHtml && showViberContent && (
         <section>
           <label className="section-label">Медиа контент</label>
           <div className="flex gap-1 mb-3">
