@@ -119,7 +119,7 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
             />
             <p className="text-[10px] text-muted-foreground mt-1.5">
               {isViberBot
-                ? 'Токен авторизации из кабинета Viber for Business'
+                ? 'Токен авторизации из кабинета Viber'
                 : isMax
                   ? 'Укажите Access Token, выданный платформой MAX'
                   : 'Получите токен у @BotFather в Telegram'}
