@@ -180,10 +180,10 @@ export function buildViberJson(msg: MessageData): object {
     message: msg.text || '',
     route: outRoute,
     rus: '1',
-    image_url: msg.mediaUrl || '',
-    btn_url: btn?.url || '',
-    btn_name: btn?.text || '',
   };
+  if (msg.mediaUrl) base.image_url = msg.mediaUrl;
+  if (btn?.url) base.btn_url = btn.url;
+  if (btn?.text) base.btn_name = btn.text;
   if (route !== 'viber-only') {
     base.param_sms = msg.smsText || '';
   }
