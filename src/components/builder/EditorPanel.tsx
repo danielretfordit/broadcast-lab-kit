@@ -49,11 +49,12 @@ export default function EditorPanel() {
         wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
       }
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
-      const useMaxSyntax = message.platform === 'max' || message.platform === 'viber';
-      if (tag === 'bold') wrapped = useMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
-      else if (tag === 'italic') wrapped = useMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
-      else if (tag === 'underline') wrapped = useMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
-      else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
+      const isMaxSyntax = message.platform === 'max';
+      const isViberSyntax = message.platform === 'viber';
+      if (tag === 'bold') wrapped = isMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
+      else if (tag === 'italic') wrapped = isMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
+      else if (tag === 'underline') wrapped = isMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
+      else if (tag === 'strikethrough') wrapped = isViberSyntax ? `~${selected || 'текст'}~` : `~~${selected || 'текст'}~~`;
       else if (tag === 'mono') wrapped = '```' + (selected || 'код') + '```';
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
@@ -389,7 +390,9 @@ export default function EditorPanel() {
               message.parseMode === 'MarkdownV2'
                 ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
                 : message.parseMode === 'Markdown'
-                  ? `**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\`\n[ссылка](https://...)${isMax ? '\n# Заголовок' : ''}\n> Цитата`
+                  ? isViber
+                    ? '*Жирный* _курсив_ ~зачёркнутый~ ```моноширинный```'
+                    : `**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\`\n[ссылка](https://...)${isMax ? '\n# Заголовок' : ''}\n> Цитата`
                   : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className="w-full px-3 py-3 rounded-lg bg-card border border-border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 resize-y min-h-[180px]"
