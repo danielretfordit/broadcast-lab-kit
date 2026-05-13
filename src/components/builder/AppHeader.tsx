@@ -226,6 +226,8 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                   <Lock size={12} />
                 ) : p.logo ? (
                   <img src={p.logo} alt={p.label} className="w-4 h-4" />
+                ) : p.CustomIcon ? (
+                  <p.CustomIcon className="w-4 h-4" />
                 ) : p.icon ? (
                   <p.icon size={14} />
                 ) : null}
@@ -236,10 +238,8 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
 
           {/* Disabled channels */}
           {([
-            { id: 'viber', label: 'Viber', Icon: ViberIcon, paid: false },
-            { id: 'viber-business', label: 'Viber Business', Icon: ViberIcon, paid: true },
+            { id: 'viber-personal', label: 'Viber', Icon: ViberIcon, paid: false },
             { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
-            { id: 'sms', label: 'SMS', Icon: SmsIcon, paid: true },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
               <TooltipTrigger asChild>
