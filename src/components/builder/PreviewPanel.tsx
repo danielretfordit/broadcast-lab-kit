@@ -294,7 +294,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 ⚠ Inline-кнопки не отправляются вместе с альбомом фото
               </div>
             )}
-            )}
+            </>)}
 
             {isViber && routeHasSms && (() => {
               const info = smsParts(message.smsText || '');
