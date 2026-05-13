@@ -188,7 +188,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             </div>
 
+            {(!isViber || routeHasViber) && (
             <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
+
               {isAlbum && albumUrls.length > 0 && (
                 <div className="rounded-t-xl overflow-hidden">
                   <AlbumGrid urls={albumUrls} />
