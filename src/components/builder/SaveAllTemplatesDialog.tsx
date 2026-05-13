@@ -18,11 +18,11 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
-const PLATFORMS: { key: Platform; label: string; paid?: boolean }[] = [
+const PLATFORMS: { key: Platform; label: string; paid?: boolean; dialog24h?: boolean }[] = [
   { key: 'telegram', label: 'Telegram' },
   { key: 'max', label: 'MAX' },
   { key: 'viber_business', label: 'Viber Business / SMS', paid: true },
-  { key: 'viber_bot', label: 'Viber', paid: true },
+  { key: 'viber_bot', label: 'Viber', dialog24h: true },
   { key: 'sms', label: 'SMS', paid: true },
   { key: 'html', label: 'HTML (Email)' },
 ];
