@@ -439,6 +439,7 @@ export default function EditorPanel() {
           </div>
         )}
       </section>
+      )}
 
       {/* Inline buttons */}
       {!isHtml && showViberContent && (
