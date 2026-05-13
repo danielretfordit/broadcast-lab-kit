@@ -46,10 +46,10 @@ export default function EditorPanel() {
         wrapped = src.split('\n').map(l => `> ${l}`).join('\n');
       }
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
-      const isMax = message.platform === 'max';
-      if (tag === 'bold') wrapped = isMax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
-      else if (tag === 'italic') wrapped = isMax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
-      else if (tag === 'underline') wrapped = isMax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
+      const useMaxSyntax = message.platform === 'max' || message.platform === 'viber';
+      if (tag === 'bold') wrapped = useMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
+      else if (tag === 'italic') wrapped = useMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
+      else if (tag === 'underline') wrapped = useMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
       else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
@@ -105,13 +105,18 @@ export default function EditorPanel() {
     ).filter(r => r.buttons.length > 0));
   };
 
-  const mediaTypes = [
-    { id: 'none' as const, icon: null, label: 'Нет' },
-    { id: 'photo' as const, icon: Image, label: 'Фото' },
-    { id: 'video' as const, icon: Video, label: 'Видео' },
-    { id: 'document' as const, icon: FileText, label: 'Файл' },
-    { id: 'album' as const, icon: Images, label: 'Альбом' },
-  ];
+  const mediaTypes = isViber
+    ? [
+        { id: 'none' as const, icon: null, label: 'Нет' },
+        { id: 'photo' as const, icon: Image, label: 'Фото' },
+      ]
+    : [
+        { id: 'none' as const, icon: null, label: 'Нет' },
+        { id: 'photo' as const, icon: Image, label: 'Фото' },
+        { id: 'video' as const, icon: Video, label: 'Видео' },
+        { id: 'document' as const, icon: FileText, label: 'Файл' },
+        { id: 'album' as const, icon: Images, label: 'Альбом' },
+      ];
 
   const updateAlbumUrl = (idx: number, value: string) => {
     const next = [...albumUrls];
