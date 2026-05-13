@@ -5,7 +5,7 @@ interface Props {
 
 export default function ViberBrandIcon({ className, style }: Props) {
   return (
-    <svg viewBox="0 0 512 512" fill="currentColor" className={className} aria-hidden="true">
+    <svg viewBox="0 0 512 512" fill="currentColor" className={className} style={style} aria-hidden="true">
       <path
         fill="none"
         stroke="currentColor"
