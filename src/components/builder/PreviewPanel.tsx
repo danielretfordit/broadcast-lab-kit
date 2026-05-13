@@ -373,30 +373,25 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                   {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
                   {saving ? 'Сохранение...' : disabledLabel}
                 </button>
-                {(() => {
-                  const channelLocked = !!searchParams.get('channel');
-                  return (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="Дополнительно"
-                          disabled={channelLocked}
-                          title={channelLocked ? 'Недоступно: канал зафиксирован параметром URL' : ''}
-                          className="h-[42px] w-[42px] flex items-center justify-center rounded-lg border border-border bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-background"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => setSaveAllOpen(true)}>
-                          <Layers size={14} className="mr-2" />
-                          Сохранить все шаблоны
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  );
-                })()}
+                {!searchParams.get('channel') && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Дополнительно"
+                        className="h-[42px] w-[42px] flex items-center justify-center rounded-lg border border-border bg-background hover:bg-muted transition-colors"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setSaveAllOpen(true)}>
+                        <Layers size={14} className="mr-2" />
+                        Сохранить все шаблоны
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             );
           })()}
