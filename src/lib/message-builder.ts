@@ -158,19 +158,35 @@ export function buildEmailJson(msg: MessageData): object {
 }
 
 export function buildViberJson(msg: MessageData): object {
+  const route = msg.viberRoute || 'viber(60)-sms';
+
+  if (route === 'sms-only') {
+    return {
+      login: '******',
+      password: '******',
+      phones: '<phone>',
+      message: msg.smsText || '',
+      route: 'sms',
+      rus: '1',
+    };
+  }
+
   const btn = msg.buttonRows[0]?.buttons[0];
-  return {
+  const base: Record<string, unknown> = {
     login: '******',
     password: '******',
     phones: '<phone>',
     message: msg.text || '',
-    route: msg.viberRoute || 'viber(60)-sms',
-    param_sms: msg.smsText || '',
+    route,
     rus: '1',
     image_url: msg.mediaUrl || '',
     btn_url: btn?.url || '',
     btn_name: btn?.text || '',
   };
+  if (route !== 'viber-only') {
+    base.param_sms = msg.smsText || '';
+  }
+  return base;
 }
 
 export function buildJson(msg: MessageData): object {
