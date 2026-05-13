@@ -13,7 +13,7 @@ import { Platform } from '@/lib/message-builder';
 type BuilderMode = 'marketing' | 'transactional';
 
 function isPlatform(v: string | null): v is Platform {
-  return v === 'telegram' || v === 'max' || v === 'html' || v === 'viber';
+  return v === 'telegram' || v === 'max' || v === 'html' || v === 'viber' || v === 'sms';
 }
 function isMode(v: string | null): v is BuilderMode {
   return v === 'marketing' || v === 'transactional';
