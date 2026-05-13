@@ -56,11 +56,12 @@ export default function EditorPanel() {
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
       const isMaxSyntax = message.platform === 'max';
       const isViberSyntax = message.platform === 'viber_business' || message.platform === 'viber_bot';
+      const isWaSyntax = message.platform === 'whatsapp';
       if (tag === 'bold') wrapped = isMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = isMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
       else if (tag === 'underline') wrapped = isMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
-      else if (tag === 'strikethrough') wrapped = isViberSyntax ? `~${selected || 'текст'}~` : `~~${selected || 'текст'}~~`;
-      else if (tag === 'mono') wrapped = '```' + (selected || 'код') + '```';
+      else if (tag === 'strikethrough') wrapped = (isViberSyntax || isWaSyntax) ? `~${selected || 'текст'}~` : `~~${selected || 'текст'}~~`;
+      else if (tag === 'mono') wrapped = isWaSyntax ? '`' + (selected || 'код') + '`' : '```' + (selected || 'код') + '```';
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
       if (tag === 'bold') wrapped = `<b>${selected || 'текст'}</b>`;
@@ -420,14 +421,14 @@ export default function EditorPanel() {
           </label>
           {!isHtml && (
             <span className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground">
-              {message.platform === 'telegram' ? 'MarkdownV2' : 'Markdown'}
+              {message.platform === 'telegram' ? 'MarkdownV2' : isWhatsApp ? 'WhatsApp' : 'Markdown'}
             </span>
           )}
         </div>
 
         {!isHtml && (
           <div className="flex items-center gap-1 mb-2">
-            {((isViber || isViberBot)
+            {((isViber || isViberBot || isWhatsApp)
               ? [
                   { tag: 'bold', icon: Bold, title: 'Жирный' },
                   { tag: 'italic', icon: Italic, title: 'Курсив' },

@@ -110,10 +110,18 @@ function PlatformIcon({ p }: { p: Platform }) {
     );
   }
   if (p === 'viber_bot') {
-    return <ViberBrandIcon className="w-7 h-7" style={{ color: '#7360F2' }} />;
+    return (
+      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center">
+        <ViberBrandIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+      </div>
+    );
   }
   if (p === 'whatsapp') {
-    return <WhatsAppBrandIcon className="w-7 h-7" style={{ color: '#25D366' }} />;
+    return (
+      <div className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center">
+        <WhatsAppBrandIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+      </div>
+    );
   }
   if (p === 'sms') {
     return (

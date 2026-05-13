@@ -7,6 +7,7 @@ function defaultParseMode(platform: Platform): MessageData['parseMode'] {
   if (platform === 'viber_business') return 'Markdown';
   if (platform === 'viber_bot') return 'Markdown';
   if (platform === 'sms') return 'Markdown';
+  if (platform === 'whatsapp') return 'Markdown';
   return 'MarkdownV2';
 }
 
@@ -37,6 +38,7 @@ export function loadDraft(platform: Platform): MessageData {
       else if (platform === 'viber_business') merged.parseMode = 'Markdown';
       else if (platform === 'viber_bot') merged.parseMode = 'Markdown';
       else if (platform === 'sms') merged.parseMode = 'Markdown';
+      else if (platform === 'whatsapp') merged.parseMode = 'Markdown';
       else if (platform === 'html') merged.parseMode = 'HTML';
       if (platform === 'viber_bot' && !merged.viberBotSenderName) {
         merged.viberBotSenderName = 'ARMTEK | ЧАТ-БОТ | BY';

@@ -4,7 +4,7 @@ import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTe
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import BotSettingsDialog, { getBotToken, getTestChatId, getViberBotSender } from './BotSettingsDialog';
+import BotSettingsDialog, { getBotToken, getTestChatId, getViberBotSender, getWhatsAppSender } from './BotSettingsDialog';
 import { useSearchParams } from 'react-router-dom';
 
 export default function JsonPanel() {
@@ -23,6 +23,7 @@ export default function JsonPanel() {
   const isViber = message.platform === 'viber_business';
   const isViberBot = message.platform === 'viber_bot';
   const isSms = message.platform === 'sms';
+  const isWhatsApp = message.platform === 'whatsapp';
 
   useEffect(() => {
     if (!editMode) {
@@ -120,6 +121,38 @@ export default function JsonPanel() {
       return;
     }
 
+    if (isWhatsApp) {
+      const token = getBotToken('whatsapp' as any);
+      const from = getWhatsAppSender();
+      const to = getTestChatId('whatsapp' as any);
+      if (!token) { toast.error('Сначала укажите API Token (apikey)'); setSettingsOpen(true); return; }
+      if (!from) { toast.error('Укажите Sender ID (from) в настройках'); setSettingsOpen(true); return; }
+      if (!to) { toast.error('Укажите Receiver ID (to) в настройках'); setSettingsOpen(true); return; }
+      const body = editMode ? jsonText : generatedJson;
+      let payload: any;
+      try { payload = JSON.parse(body); } catch { toast.error('Невалидный JSON'); return; }
+      payload.from = from;
+      payload.to = to;
+      setTesting(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('whatsapp-send', { body: { apikey: token, payload } });
+        if (error) {
+          toast.error(`WhatsApp: ${error.message}`);
+        } else if (data?.ok) {
+          const mid = data?.body?.messageId || data?.body?.id || '';
+          toast.success(`WhatsApp: отправлено${mid ? ' • id: ' + mid : ''}`);
+        } else {
+          const msg = data?.body?.message || data?.body?.error || data?.body?.detail || `HTTP ${data?.status}`;
+          toast.error(`WhatsApp: ${msg}`);
+        }
+      } catch (e: any) {
+        toast.error(e?.message || 'Ошибка сети');
+      } finally {
+        setTesting(false);
+      }
+      return;
+    }
+
     const platformKeyEarly: 'telegram' | 'max' = isTelegram ? 'telegram' : 'max';
     const testChatId = (getTestChatId(platformKeyEarly) || '').trim();
     if (!testChatId) {
@@ -197,7 +230,7 @@ export default function JsonPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : isViberBot ? '(Viber Bot)' : isSms ? '(SMS)' : '(MAX)'}
+            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : isViberBot ? '(Viber Bot)' : isSms ? '(SMS)' : isWhatsApp ? '(WhatsApp)' : '(MAX)'}
           </h3>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
             validation.valid
@@ -296,10 +329,10 @@ export default function JsonPanel() {
       {!isSms && !isViber && (
         <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
           <span>
-            {isTelegram ? 'Telegram Bot API' : isViberBot ? 'Viber REST API' : 'MAX API'} • {message.parseMode}
+            {isTelegram ? 'Telegram Bot API' : isViberBot ? 'Viber REST API' : isWhatsApp ? 'Tyntec API' : 'MAX API'} • {message.parseMode}
           </span>
           <span>
-            {isTelegram ? getTelegramMethod(message) : isViberBot ? 'pa/send_message' : 'messages/send'}
+            {isTelegram ? getTelegramMethod(message) : isViberBot ? 'pa/send_message' : isWhatsApp ? 'conversations/v3/messages' : 'messages/send'}
           </span>
         </div>
       )}
@@ -331,7 +364,7 @@ export default function JsonPanel() {
       <BotSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        platform={isTelegram ? 'telegram' : isViberBot ? 'viber_bot' : 'max'}
+        platform={isTelegram ? 'telegram' : isViberBot ? 'viber_bot' : isWhatsApp ? 'whatsapp' : 'max'}
       />
     </div>
   );
