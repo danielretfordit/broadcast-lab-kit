@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, XCircle, Loader2, Save, Mail } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Save, Mail, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { loadDraft } from '@/contexts/MessageContext';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildEmailJson, buildMaxJson, buildTelegramJson, MessageData, Platform } from '@/lib/message-builder';
+import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, MessageData, Platform } from '@/lib/message-builder';
 import maxLogo from '@/assets/max-logo.png';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
@@ -19,6 +19,7 @@ interface Props {
 const PLATFORMS: { key: Platform; label: string }[] = [
   { key: 'telegram', label: 'Telegram' },
   { key: 'max', label: 'MAX' },
+  { key: 'viber', label: 'Viber Business / SMS' },
   { key: 'html', label: 'HTML (Email)' },
 ];
 
@@ -35,12 +36,14 @@ function isFilled(m: MessageData): boolean {
   if (mediaInvalid) return false;
   const textEmpty = !m.text.trim();
   if (m.platform === 'html') return !!m.subject.trim() && !textEmpty;
+  if (m.platform === 'viber') return !textEmpty || !!(m.smsText && m.smsText.trim());
   return !textEmpty || hasValidMedia;
 }
 
 function buildFor(p: Platform, m: MessageData): object {
   if (p === 'telegram') return buildTelegramJson(m);
   if (p === 'max') return buildMaxJson(m);
+  if (p === 'viber') return buildViberJson(m);
   return buildEmailJson(m);
 }
 
@@ -59,6 +62,13 @@ function PlatformIcon({ p }: { p: Platform }) {
       </div>
     );
   }
+  if (p === 'viber') {
+    return (
+      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white">
+        <MessageSquare size={14} />
+      </div>
+    );
+  }
   return (
     <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-foreground">
       <Mail size={14} />
@@ -72,24 +82,24 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
   const [saving, setSaving] = useState(false);
 
   const drafts = useMemo<Record<Platform, MessageData>>(() => {
-    if (!open) {
-      return { telegram: loadDraft('telegram'), max: loadDraft('max'), html: loadDraft('html') };
-    }
+    const get = (p: Platform) => (message.platform === p ? message : loadDraft(p));
     return {
-      telegram: message.platform === 'telegram' ? message : loadDraft('telegram'),
-      max: message.platform === 'max' ? message : loadDraft('max'),
-      html: message.platform === 'html' ? message : loadDraft('html'),
+      telegram: get('telegram'),
+      max: get('max'),
+      viber: get('viber'),
+      html: get('html'),
     };
   }, [open, message]);
 
   const filledMap = useMemo(() => ({
     telegram: isFilled(drafts.telegram),
     max: isFilled(drafts.max),
+    viber: isFilled(drafts.viber),
     html: isFilled(drafts.html),
   }), [drafts]);
 
   const [selected, setSelected] = useState<Record<Platform, boolean>>({
-    telegram: true, max: true, html: true,
+    telegram: true, max: true, viber: true, html: true,
   });
 
   // Reset selection on open based on filled state
@@ -98,6 +108,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
       setSelected({
         telegram: filledMap.telegram,
         max: filledMap.max,
+        viber: filledMap.viber,
         html: filledMap.html,
       });
     }

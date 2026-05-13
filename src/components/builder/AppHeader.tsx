@@ -227,7 +227,9 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                 ) : p.logo ? (
                   <img src={p.logo} alt={p.label} className="w-4 h-4" />
                 ) : p.CustomIcon ? (
-                  <p.CustomIcon className="w-4 h-4" />
+                  <span style={p.iconColor ? { color: p.iconColor } : undefined}>
+                    <p.CustomIcon className="w-4 h-4" />
+                  </span>
                 ) : p.icon ? (
                   <p.icon size={14} />
                 ) : null}
