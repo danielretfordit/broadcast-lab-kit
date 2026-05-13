@@ -22,6 +22,7 @@ type PlatformTab = {
   iconColor?: string;
   iconClassName?: string;
   paid?: boolean;
+  dialog24h?: boolean;
 };
 
 // ViberBrandIcon now imported from shared component
