@@ -1,6 +1,6 @@
 import { escapeMarkdownV2Plain, prepareMarkdownV2 } from '@/lib/markdown';
 
-export type Platform = 'telegram' | 'max' | 'html' | 'viber';
+export type Platform = 'telegram' | 'max' | 'html' | 'viber' | 'sms';
 
 export interface InlineButton {
   id: string;
@@ -190,10 +190,27 @@ export function buildViberJson(msg: MessageData): object {
   return base;
 }
 
+export function buildSmsJson(msg: MessageData): object {
+  return { message: (msg.smsText || msg.text || '') };
+}
+
+export function parseSmsJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  return {
+    text: '',
+    smsText: typeof parsed.message === 'string' ? parsed.message : '',
+    parseMode: 'Markdown',
+    mediaType: 'none',
+    mediaUrl: '',
+    mediaUrls: [],
+    buttonRows: [],
+  };
+}
+
 export function buildJson(msg: MessageData): object {
   if (msg.platform === 'telegram') return buildTelegramJson(msg);
   if (msg.platform === 'max') return buildMaxJson(msg);
   if (msg.platform === 'viber') return buildViberJson(msg);
+  if (msg.platform === 'sms') return buildSmsJson(msg);
   return buildEmailJson(msg);
 }
 
@@ -368,6 +385,7 @@ export function parseJsonToMessage(jsonStr: string, platform: Platform): Partial
   if (platform === 'telegram') return parseTelegramJson(parsed);
   if (platform === 'max') return parseMaxJson(parsed);
   if (platform === 'viber') return parseViberJson(parsed);
+  if (platform === 'sms') return parseSmsJson(parsed);
   return parseEmailJson(parsed);
 }
 

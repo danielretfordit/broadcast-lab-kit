@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, XCircle, Loader2, Save, Mail, MessageSquare } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Save, Mail, MessageSquare, Coins } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { loadDraft } from '@/contexts/MessageContext';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, MessageData, Platform } from '@/lib/message-builder';
+import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildSmsJson, MessageData, Platform } from '@/lib/message-builder';
 import maxLogo from '@/assets/max-logo.png';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
@@ -16,14 +16,16 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
-const PLATFORMS: { key: Platform; label: string }[] = [
+const PLATFORMS: { key: Platform; label: string; paid?: boolean }[] = [
   { key: 'telegram', label: 'Telegram' },
   { key: 'max', label: 'MAX' },
-  { key: 'viber', label: 'Viber Business / SMS' },
+  { key: 'viber', label: 'Viber Business / SMS', paid: true },
+  { key: 'sms', label: 'SMS', paid: true },
   { key: 'html', label: 'HTML (Email)' },
 ];
 
 function isFilled(m: MessageData): boolean {
+  if (m.platform === 'sms') return !!(m.smsText && m.smsText.trim());
   const albumUrls = (m.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = m.mediaType === 'album';
   const hasValidMedia =
@@ -34,7 +36,6 @@ function isFilled(m: MessageData): boolean {
     const textOk = !!m.text.trim();
     const smsOk = !!(m.smsText && m.smsText.trim());
     if (route === 'sms-only') return smsOk;
-    // For viber-only and viber(*)-sms validate media if selected
     const mediaInvalid =
       (m.mediaType !== 'none' && m.mediaType !== 'album' && !m.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2);
@@ -56,6 +57,7 @@ function buildFor(p: Platform, m: MessageData): object {
   if (p === 'telegram') return buildTelegramJson(m);
   if (p === 'max') return buildMaxJson(m);
   if (p === 'viber') return buildViberJson(m);
+  if (p === 'sms') return buildSmsJson(m);
   return buildEmailJson(m);
 }
 
@@ -81,6 +83,13 @@ function PlatformIcon({ p }: { p: Platform }) {
       </div>
     );
   }
+  if (p === 'sms') {
+    return (
+      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+        <MessageSquare size={14} />
+      </div>
+    );
+  }
   return (
     <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-foreground">
       <Mail size={14} />
@@ -99,6 +108,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
       telegram: get('telegram'),
       max: get('max'),
       viber: get('viber'),
+      sms: get('sms'),
       html: get('html'),
     };
   }, [open, message]);
@@ -107,11 +117,12 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
     telegram: isFilled(drafts.telegram),
     max: isFilled(drafts.max),
     viber: isFilled(drafts.viber),
+    sms: isFilled(drafts.sms),
     html: isFilled(drafts.html),
   }), [drafts]);
 
   const [selected, setSelected] = useState<Record<Platform, boolean>>({
-    telegram: true, max: true, viber: true, html: true,
+    telegram: true, max: true, viber: true, sms: true, html: true,
   });
 
   // Reset selection on open based on filled state
@@ -121,6 +132,7 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
         telegram: filledMap.telegram,
         max: filledMap.max,
         viber: filledMap.viber,
+        sms: filledMap.sms,
         html: filledMap.html,
       });
     }
@@ -191,7 +203,10 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
               >
                 <div className="flex items-center gap-3">
                   <PlatformIcon p={p.key} />
-                  <span className="text-sm font-medium text-foreground">{p.label}</span>
+                  <span className="text-sm font-medium text-foreground inline-flex items-center gap-1">
+                    {p.label}
+                    {p.paid && <Coins size={12} className="text-amber-500/80" />}
+                  </span>
                 </div>
                 <div>
                   {filled ? (

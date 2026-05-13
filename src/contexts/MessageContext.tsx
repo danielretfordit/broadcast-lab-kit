@@ -5,6 +5,7 @@ function defaultParseMode(platform: Platform): MessageData['parseMode'] {
   if (platform === 'html') return 'HTML';
   if (platform === 'max') return 'Markdown';
   if (platform === 'viber') return 'Markdown';
+  if (platform === 'sms') return 'Markdown';
   return 'MarkdownV2';
 }
 
@@ -26,6 +27,7 @@ export function loadDraft(platform: Platform): MessageData {
       if (platform === 'telegram') merged.parseMode = 'MarkdownV2';
       else if (platform === 'max') merged.parseMode = 'Markdown';
       else if (platform === 'viber') merged.parseMode = 'Markdown';
+      else if (platform === 'sms') merged.parseMode = 'Markdown';
       else if (platform === 'html') merged.parseMode = 'HTML';
       return merged;
     }

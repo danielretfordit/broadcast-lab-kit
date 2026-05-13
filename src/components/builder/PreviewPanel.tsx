@@ -24,11 +24,13 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
   const isViberPlatform = message.platform === 'viber';
+  const isSmsPlatform = message.platform === 'sms';
   const viberRoute = message.viberRoute || 'viber(60)-sms';
-  const routeHasSms = isViberPlatform && viberRoute.includes('sms');
+  const routeHasSms = (isViberPlatform && viberRoute.includes('sms')) || isSmsPlatform;
   const routeHasViber = isViberPlatform && viberRoute.startsWith('viber');
   const mediaInvalid =
     !isHtmlPlatform &&
+    !isSmsPlatform &&
     !(isViberPlatform && !routeHasViber) &&
     ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2));
@@ -39,13 +41,15 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     (isAlbum && albumUrls.length >= 2);
   const emptyTemplate = isHtmlPlatform
     ? (!message.subject.trim() || textEmpty)
-    : isViberPlatform
-      ? (viberRoute === 'sms-only'
-          ? smsEmpty
-          : viberRoute === 'viber-only'
-            ? textEmpty
-            : (textEmpty || smsEmpty))
-      : (textEmpty && !hasValidMedia);
+    : isSmsPlatform
+      ? smsEmpty
+      : isViberPlatform
+        ? (viberRoute === 'sms-only'
+            ? smsEmpty
+            : viberRoute === 'viber-only'
+              ? textEmpty
+              : (textEmpty || smsEmpty))
+        : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
@@ -117,6 +121,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isTelegram = message.platform === 'telegram';
   const isHtml = message.platform === 'html';
   const isViber = message.platform === 'viber';
+  const isSms = message.platform === 'sms';
 
   const handleSaveToProject = async () => {
     const guid = searchParams.get('guid');
@@ -152,8 +157,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     }
   };
 
-  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : 'MAX';
-  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber ? null : maxLogo;
+  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isSms ? 'SMS' : 'MAX';
+  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isSms ? null : maxLogo;
 
   return (
     <div className="flex flex-col h-full">
@@ -177,10 +182,11 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           <>
             <div className="flex items-center gap-2 mb-4">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-                isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : 'bg-secondary'
+                isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
               }`}>
                 {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
                 {isViber && <MessageSquare size={14} className="text-white" />}
+                {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">{platformLabel} Preview</p>
@@ -188,7 +194,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             </div>
 
-            {(!isViber || routeHasViber) && (<>
+            {!isSms && (!isViber || routeHasViber) && (<>
             <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
 
               {isAlbum && albumUrls.length > 0 && (
@@ -296,7 +302,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
             )}
             </>)}
 
-            {isViber && routeHasSms && (() => {
+            {((isViber && routeHasSms) || isSms) && (() => {
               const info = smsParts(message.smsText || '');
               const tone =
                 info.parts === 0 ? 'text-muted-foreground'
@@ -318,7 +324,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
                   <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                    {isSms ? <>кодировка <span className="font-mono">{info.encoding}</span></> : <>Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span></>}
                   </p>
                 </div>
               );
@@ -335,7 +341,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       : 'sendMessage'
                   : isViber
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
-                    : 'POST /messages'}
+                    : isSms
+                      ? 'Provider · route: sms'
+                      : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>

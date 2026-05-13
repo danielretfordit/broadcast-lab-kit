@@ -51,6 +51,7 @@ const platforms: PlatformTab[] = [
   { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
   { id: 'max', label: 'MAX', logo: maxLogo },
   { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
+  { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-4 h-4', paid: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
@@ -260,7 +261,6 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
           {([
             { id: 'viber-personal', label: 'Viber', Icon: ViberBrandIcon, paid: false },
             { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
-            { id: 'sms', label: 'SMS', Icon: SmsIcon, paid: true },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
               <TooltipTrigger asChild>
