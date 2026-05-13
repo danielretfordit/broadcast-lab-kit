@@ -272,8 +272,9 @@ export default function JsonPanel() {
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-          title="Настройки токена бота (только в этой сессии)"
+          disabled={isViber}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-muted-foreground"
+          title={isViber ? 'Недоступно для Viber Business / SMS' : 'Настройки токена бота (только в этой сессии)'}
         >
           <Settings2 size={12} />
           Настройки
