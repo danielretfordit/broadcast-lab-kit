@@ -1,37 +1,114 @@
-## Viber keyboard fixes
+## Правки Viber
 
-### 1) Корректный рендер при смешанных Rows (1 и 2)
-`PreviewPanel.tsx` → `ViberKeyboardPreview`: переделать сетку на `grid-template-columns: repeat(6, 1fr)` + `grid-auto-rows: 36px` + `grid-auto-flow: dense`. Каждая кнопка получает `gridColumn: span cols` и `gridRow: span rows`. Убрать `minHeight`. Это корректно отрисует кнопку Rows=2 рядом с Rows=1 (вторая займёт две ячейки вертикально, соседняя — одну, без перекосов).
+**1) Цвет текста кнопок Viber клавиатуры — по умолчанию чёрный**
+- В `EditorPanel.tsx` мини-тулбар форматирования кнопок: убрать дефолтный `<font color="#FFFFFF">`. Чёрный — без обёртки. При клике "белый цвет" вставляется `<font color='#FFFFFF'>...</font>`, при "чёрный" — снимать обёртку или вставлять `<font color='#000000'>`.
+- В `PreviewPanel.tsx` (`renderViberBtnText`): дефолтный цвет текста — `#000000` если не задан `<font color>`.
 
-### 2) Форматирование цвета и размера текста кнопки `<font>`
-**Документация Viber:** `<font color="#HEX">X</font>`, `<font size="N">X</font>` (N: 12–32).
+**2) Переделать структуру форматирования `<font>` в кнопках Viber**
+Правильный формат: `<font size='24' color='#FFFFFF'><b>ТЕКСТ</b></font>` (атрибуты в одинарных кавычках, оба внутри одного тега `<font>`).
+- В `EditorPanel.tsx` тулбар форматирования кнопки изменить так, чтобы был ОДИН блок управления для выделенного фрагмента: галочки/инпуты для color, size, и кнопки B/I, которые оборачивают выделение в `<font size='N' color='#HEX'><b>...</b></font>` единым тегом.
+- Кнопка "Применить форматирование" собирает результат: если задан только bold — `<b>x</b>`, если задан size/color — оборачивает в `<font ...>`. Атрибуты — одинарные кавычки.
+- Парсер в превью (`renderViberBtnText`) уже поддерживает оба варианта (одинарные/двойные кавычки) — проверить и добавить regex для одинарных кавычек если не работает.
 
-**Editor (`EditorPanel.tsx`)** — расширить мини-тулбар форматирования текста кнопки (рядом с `<b>/<i>`):
-- Кнопки вставки: `<font color='#FFFFFF'>`, `<font color='#000000'>`, `</font>`
-- Селект размера (12, 14, 16, 18, 20, 24, 28, 32) → вставляет `<font size='N'>` (закрытие общим `</font>`)
+**3) `min_api_version: 4`**
+- В `buildViberBotJson` (`message-builder.ts`) изменить `min_api_version: 1` → `min_api_version: 4`.
+- В `parseViberBotJson` принимать любое значение.
 
-**Preview (`PreviewPanel.tsx`)** — расширить `renderViberBtnText`:
-- В whitelist добавить `<font ...>` и `</font>`. Парсить только атрибуты `color` (валидный `#RRGGBB`) и `size` (число 12–32). Конвертировать в безопасный inline-`<span style="color:...; font-size:...px">`.
-- Закрывающий `</font>` → `</span>`.
-- Остальные теги/значения экранируются как раньше.
+---
 
-**Build/Parse (`message-builder.ts`)** — текст кнопки уже передаётся как есть, изменений не требуется.
+## Новый раздел WhatsApp (платформа `whatsapp`)
 
-### 3) Иконка Viber: больше, без круга, классическая сиреневая
-- `PreviewPanel.tsx` (строки 188–201): для `viber_bot` заменить круглый аватар на `<ViberBrandIcon className="w-8 h-8" style={{ color: '#7360F2' }} />` без фоновой подложки. Для `viber_business` оставить текущее поведение или применить ту же иконку без круга — применим то же изменение.
-- `SaveAllTemplatesDialog.tsx` (строки 89–102): для `viber_bot` (и `viber_business`) убрать `w-7 h-7 rounded-full bg-[#7360F2]` обёртку, рендерить `<ViberBrandIcon className="w-7 h-7" style={{color:'#7360F2'}} />` напрямую.
+**Разблокировать кнопку платформы WhatsApp** (в `AppHeader.tsx` или там где `disabled` для whatsapp).
 
-### 4) Убрать строку «Цвет фона #FF7300 (фиксирован)»
-`EditorPanel.tsx` строки 769–772 — удалить блок целиком.
+**A) Типы и модель данных (`message-builder.ts`)**
+- Добавить `'whatsapp'` в `Platform` union.
+- Новые типы для WhatsApp кнопок reply:
+  ```ts
+  export interface WhatsAppReplyButton { id: string; title: string; payload: string; }
+  export interface WhatsAppInteractive {
+    header: string;     // text
+    body: string;       // text (mandatory)
+    footer: string;     // text
+    buttons: WhatsAppReplyButton[]; // max 3
+  }
+  ```
+- В `MessageData` добавить опциональные `whatsappInteractive?: WhatsAppInteractive`, `whatsappFilename?: string`.
+- Поддерживаемые медиа: `none | photo | video | document` (без album).
 
-### 5) Убрать `#0054A6` из палитры
-`message-builder.ts` → `VIBER_BTN_BG_PALETTE` оставить: `['#FF7300','#1A2229','#343F49','#F5F7F9','#FFFFFF']`.
+**B) Build/Parse JSON**
+Добавить `buildWhatsAppJson(msg)` со структурой:
+```
+{ from: "*****", to: "<service_user_id>", channel: "whatsapp", content: { ... } }
+```
+Где `content`:
+- Если есть кнопки (interactive с buttons заполнены и есть body): `contentType: "interactive"`, `interactive: { subType: "buttons", components: { header: {type:"text", text}, body: {type:"text", text}, footer: {type:"text", text}, buttons: [{type:"reply", reply:{payload, title}}] } }`. Header/footer добавляются только если непустые.
+- Иначе если есть фото: `contentType: "image", image: { caption, url }`.
+- Иначе видео: `contentType: "video", video: { caption, url }`.
+- Иначе документ: `contentType: "document", document: { url, caption, filename }`.
+- Иначе: `contentType: "text", text: msg.text`.
 
-### 6) Перепроверка счётчика 8/6 колонок
-Логика `sumCols = row.buttons.reduce((s,b)=>s+(b.columns||0),0)` корректна. Подтвердить визуально, что предупреждение «⚠ перебор» появляется только при `sumCols > 6`, и что при 6/6 предупреждения нет. Никакой фактический баг кроме уже описанных не найден — изменений в логике подсчёта не требуется, но добавим явную подсказку: «Максимум 6 колонок в ряду — лишние кнопки в Viber попадут на новую строку».
+`parseWhatsAppJson(parsed)` — обратное преобразование.
 
-### Файлы
-- `src/lib/message-builder.ts` — палитра без `#0054A6`.
-- `src/components/builder/EditorPanel.tsx` — тулбар `<font>` + размер, удалить строку «фиксирован», подсказка про 6/6.
-- `src/components/builder/PreviewPanel.tsx` — новая grid-раскладка клавиатуры, расширенный `renderViberBtnText` (font color/size), иконка Viber без круга.
-- `src/components/builder/SaveAllTemplatesDialog.tsx` — иконка Viber без круга.
+Включить в `buildJson` и `parseJsonToMessage`.
+
+**C) Форматирование текста (тулбар)**
+В `EditorPanel.tsx` для платформы `whatsapp`:
+- Bold: `*текст*`
+- Italic: `_текст_`
+- Strikethrough: `~текст~`
+- Code: `` `текст` `` (одинарные backticks для inline; для блоков — три)
+Использовать `parseMode = 'Markdown'` (или новый режим `'WhatsApp'` — но Markdown с правильными wrappers достаточно: добавить ветку `isWhatsApp` в `insertFormatting`).
+
+**D) Редактор (как Viber bot, но проще)**
+- Один URL картинки/видео/документа (без album).
+- Поле "Имя файла" (filename) для documents.
+- Текст (caption или text). Для interactive это `body`.
+- Поля `Header text` (опционально, до 60 chars), `Footer text` (опционально, до 60 chars) — отображаются только когда добавлены кнопки.
+- Список reply-кнопок (max 3): редактор `title` (до 20 chars), `payload`.
+- Если кнопки добавлены — медиа недоступно (WhatsApp interactive buttons не поддерживают медиа в том же сообщении в этой структуре). Уточнение: header может быть только text, поэтому при наличии interactive buttons — медиа выключаем.
+
+**E) Превью и list-view (`PreviewPanel.tsx`, `SaveAllTemplatesDialog.tsx`)**
+- Иконка WhatsApp: классический зелёный логотип. Создать `src/components/icons/WhatsAppBrandIcon.tsx` (зелёный `#25D366`) — простой SVG в стиле Viber-иконки.
+- Превью оформить как Viber (bot): пузырь сообщения с медиа сверху, текстом, и кнопками снизу.
+- Если interactive buttons: рендер шапка (жирным), body, footer (мелкий серый), затем 3 кнопки-стека (как WhatsApp UI).
+- Поддержать markdown WhatsApp: `*bold*`, `_italic_`, `~strike~`, `` `code` `` → HTML. Простая функция `renderWhatsAppText`.
+
+**F) Валидация**
+- body обязательный (для interactive — body mandatory).
+- title кнопки ≤ 20 chars, header/footer ≤ 60 chars.
+- Не более 3 кнопок.
+- Если медиа выбрано — url обязателен.
+- Predicate `isWhatsAppValid(msg)` для блокировки сохранения/отправки, как у других каналов.
+
+**G) Save All Templates (`SaveAllTemplatesDialog.tsx`)**
+- Добавить запись для канала WhatsApp по аналогии с Viber bot: иконка, плашка `24` (как Telegram/WhatsApp 24h окно), JSON.
+
+**H) Отправка (Send/Test)**
+- Реализовать как остальные мессенджеры. Создать edge function `whatsapp-send` (по образцу `viber-send/index.ts`). Endpoint: `https://api.tyntec.com/conversations/v3/messages`. Headers: `apikey: <TYNTEC_API_KEY>`, `Content-Type: application/json`. Body — JSON из `buildWhatsAppJson` с подстановкой реальных `from`/`to`.
+- Секрет `TYNTEC_API_KEY` запросить через `secrets--add_secret`.
+
+**I) Модальное окно настройки и тестирования WhatsApp**
+По аналогии с Viber bot Settings (`BotSettingsDialog.tsx`):
+- Поля: API Token (apikey), Sender ID (from), Receiver ID (to) — для тестирования.
+- Кнопка "Тест": вызывает edge function `whatsapp-send` с текущим JSON.
+- Подсказка Receiver ID — обезличенная (как у Viber bot), без реальных ID.
+- Сохранять настройки в localStorage.
+
+---
+
+## Файлы
+
+**Изменить:**
+- `src/lib/message-builder.ts` — типы, build/parse WhatsApp, `min_api_version: 4`.
+- `src/components/builder/EditorPanel.tsx` — Viber `<font>` тулбар, WhatsApp редактор, форматирование.
+- `src/components/builder/PreviewPanel.tsx` — дефолтный чёрный цвет текста кнопок Viber, WhatsApp превью + иконка, рендер markdown.
+- `src/components/builder/SaveAllTemplatesDialog.tsx` — добавить WhatsApp.
+- `src/components/builder/AppHeader.tsx` — разблокировать WhatsApp.
+- `src/components/builder/BotSettingsDialog.tsx` или новый `WhatsAppSettingsDialog.tsx` — настройки/тест.
+- `src/contexts/MessageContext.tsx` — initial state для whatsapp полей.
+
+**Создать:**
+- `src/components/icons/WhatsAppBrandIcon.tsx`.
+- `supabase/functions/whatsapp-send/index.ts`.
+
+**Секреты:** `TYNTEC_API_KEY`.
