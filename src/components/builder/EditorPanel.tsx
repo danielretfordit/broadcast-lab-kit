@@ -395,6 +395,20 @@ export default function EditorPanel() {
         </section>
       )}
 
+      {/* WhatsApp: filename input for documents */}
+      {isWhatsApp && message.mediaType === 'document' && (
+        <section>
+          <label className="section-label">Имя файла (для документа)</label>
+          <input
+            type="text"
+            value={message.whatsappFilename || ''}
+            onChange={e => updateField('whatsappFilename', e.target.value)}
+            placeholder="invoice.pdf"
+            className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+          />
+        </section>
+      )}
+
       {/* Body */}
       {showViberContent && (
       <section className="flex flex-col flex-1">
