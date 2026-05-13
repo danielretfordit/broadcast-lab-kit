@@ -281,9 +281,9 @@ export default function JsonPanel() {
         <button
           type="button"
           onClick={handleTest}
-          disabled={testing}
+          disabled={testing || isViber}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title="Отправить тестовое сообщение"
+          title={isViber ? 'Тестовая отправка для Viber/SMS пока недоступна' : 'Отправить тестовое сообщение'}
         >
           {testing ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
           {testing ? 'Отправка...' : 'Тестировать'}
