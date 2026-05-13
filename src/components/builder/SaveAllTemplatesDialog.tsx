@@ -203,7 +203,10 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
               >
                 <div className="flex items-center gap-3">
                   <PlatformIcon p={p.key} />
-                  <span className="text-sm font-medium text-foreground">{p.label}</span>
+                  <span className="text-sm font-medium text-foreground inline-flex items-center gap-1">
+                    {p.label}
+                    {p.paid && <Coins size={12} className="text-amber-500/80" />}
+                  </span>
                 </div>
                 <div>
                   {filled ? (
