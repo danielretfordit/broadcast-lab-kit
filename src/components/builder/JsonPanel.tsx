@@ -332,7 +332,7 @@ export default function JsonPanel() {
       <BotSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        platform={isTelegram ? 'telegram' : isViberBot ? 'viber_bot' : 'max'}
+        platform={isTelegram ? 'telegram' : isViberBot ? 'viber_bot' : isWhatsApp ? 'whatsapp' : 'max'}
       />
     </div>
   );
