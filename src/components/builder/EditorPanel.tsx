@@ -23,6 +23,8 @@ export default function EditorPanel() {
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeNeedsSms = isViber && viberRoute.includes('sms');
+  const isSmsOnly = isViber && viberRoute === 'sms-only';
+  const showViberContent = !isViber || viberRoute.startsWith('viber');
   const smsMissing = routeNeedsSms && !(message.smsText || '').trim();
 
   const insertFormatting = (tag: string) => {
@@ -231,7 +233,7 @@ export default function EditorPanel() {
         </section>
       )}
 
-      {!isHtml && (
+      {!isHtml && showViberContent && (
         <section>
           <label className="section-label">Медиа контент</label>
           <div className="flex gap-1 mb-3">
@@ -329,6 +331,7 @@ export default function EditorPanel() {
       )}
 
       {/* Body */}
+      {showViberContent && (
       <section className="flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">
           <label className="section-label !mb-0">
@@ -399,6 +402,7 @@ export default function EditorPanel() {
           />
         )}
       </section>
+      )}
 
       {/* AI Editor */}
       <section>
@@ -436,7 +440,7 @@ export default function EditorPanel() {
       </section>
 
       {/* Inline buttons */}
-      {!isHtml && (
+      {!isHtml && showViberContent && (
         <section>
           <div className="flex items-center justify-between mb-2">
             <label className="section-label !mb-0">

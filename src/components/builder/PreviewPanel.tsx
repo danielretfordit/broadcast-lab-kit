@@ -24,8 +24,12 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
   const isViberPlatform = message.platform === 'viber';
+  const viberRoute = message.viberRoute || 'viber(60)-sms';
+  const routeHasSms = isViberPlatform && viberRoute.includes('sms');
+  const routeHasViber = isViberPlatform && viberRoute.startsWith('viber');
   const mediaInvalid =
     !isHtmlPlatform &&
+    !(isViberPlatform && !routeHasViber) &&
     ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2));
   const textEmpty = !message.text.trim();
@@ -36,7 +40,11 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const emptyTemplate = isHtmlPlatform
     ? (!message.subject.trim() || textEmpty)
     : isViberPlatform
-      ? (textEmpty && smsEmpty)
+      ? (viberRoute === 'sms-only'
+          ? smsEmpty
+          : viberRoute === 'viber-only'
+            ? textEmpty
+            : (textEmpty && smsEmpty))
       : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
@@ -180,7 +188,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             </div>
 
+            {(!isViber || routeHasViber) && (<>
             <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
+
               {isAlbum && albumUrls.length > 0 && (
                 <div className="rounded-t-xl overflow-hidden">
                   <AlbumGrid urls={albumUrls} />
@@ -284,8 +294,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 ⚠ Inline-кнопки не отправляются вместе с альбомом фото
               </div>
             )}
+            </>)}
 
-            {isViber && (() => {
+            {isViber && routeHasSms && (() => {
               const info = smsParts(message.smsText || '');
               const tone =
                 info.parts === 0 ? 'text-muted-foreground'
