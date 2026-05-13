@@ -1,6 +1,6 @@
 import { escapeMarkdownV2Plain, prepareMarkdownV2 } from '@/lib/markdown';
 
-export type Platform = 'telegram' | 'max' | 'html';
+export type Platform = 'telegram' | 'max' | 'html' | 'viber';
 
 export interface InlineButton {
   id: string;
@@ -24,6 +24,8 @@ export interface MessageData {
   subject: string;
   parseMode: 'MarkdownV2' | 'Markdown' | 'HTML';
   buttonRows: ButtonRow[];
+  smsText?: string;
+  viberRoute?: string;
 }
 
 export function generateId(): string {
