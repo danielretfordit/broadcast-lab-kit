@@ -149,16 +149,18 @@ export default function EditorPanel() {
     });
   };
 
-  const insertIntoKbBtnText = (rowId: string, btnId: string, currentText: string, snippet: string) => {
+  const wrapKbBtnText = (rowId: string, btnId: string, currentText: string, open: string, close: string, placeholder = 'текст') => {
     const ta = document.getElementById(`viber-btn-text-${btnId}`) as HTMLTextAreaElement | null;
     const start = ta?.selectionStart ?? currentText.length;
     const end = ta?.selectionEnd ?? currentText.length;
-    const next = currentText.substring(0, start) + snippet + currentText.substring(end);
+    const sel = currentText.substring(start, end) || placeholder;
+    const inserted = open + sel + close;
+    const next = currentText.substring(0, start) + inserted + currentText.substring(end);
     updateKbButton(rowId, btnId, 'text', next);
     requestAnimationFrame(() => {
       if (!ta) return;
       ta.focus();
-      const pos = start + snippet.length;
+      const pos = start + open.length + sel.length;
       ta.setSelectionRange(pos, pos);
     });
   };
