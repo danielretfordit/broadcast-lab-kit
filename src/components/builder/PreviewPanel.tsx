@@ -332,7 +332,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               );
             })()}
 
-            {!viewOnly && (
+            {!viewOnly && !isSms && (
               <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
                 <span className="font-semibold">API Method: </span>
                 {message.platform === 'telegram'
@@ -343,9 +343,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       : 'sendMessage'
                   : isViber
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
-                    : isSms
-                      ? 'Provider · route: sms'
-                      : 'POST /messages'}
+                    : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
