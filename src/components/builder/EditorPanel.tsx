@@ -331,6 +331,7 @@ export default function EditorPanel() {
       )}
 
       {/* Body */}
+      {showViberContent && (
       <section className="flex flex-col flex-1">
         <div className="flex items-center justify-between mb-2">
           <label className="section-label !mb-0">
