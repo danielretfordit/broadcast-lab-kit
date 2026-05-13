@@ -507,7 +507,7 @@ export default function EditorPanel() {
       )}
 
       {/* Inline buttons */}
-      {!isHtml && showViberContent && !isViberBot && (
+      {!isHtml && showViberContent && !isViberBot && !isWhatsApp && (
         <section>
           <div className="flex items-center justify-between mb-2">
             <label className="section-label !mb-0">
