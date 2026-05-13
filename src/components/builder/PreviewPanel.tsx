@@ -78,7 +78,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
       type Block = { kind: 'quote'; lines: string[] } | { kind: 'text'; lines: string[] } | { kind: 'h'; level: number; content: string };
       const blocks: Block[] = [];
       for (const ln of lines) {
-        const hMatch = /^(#{1,3})\s+(.*)$/.exec(ln);
+        const hMatch = message.platform === 'max' ? /^(#{1,3})\s+(.*)$/.exec(ln) : null;
         if (hMatch) {
           blocks.push({ kind: 'h', level: hMatch[1].length, content: hMatch[2] });
           continue;
@@ -108,6 +108,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
 
   const isTelegram = message.platform === 'telegram';
   const isHtml = message.platform === 'html';
+  const isViber = message.platform === 'viber';
 
   const handleSaveToProject = async () => {
     const guid = searchParams.get('guid');
