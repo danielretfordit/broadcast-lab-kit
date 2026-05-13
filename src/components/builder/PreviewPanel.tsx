@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { ExternalLink, Save, Loader2, MoreVertical, Layers } from 'lucide-react';
+import { ExternalLink, Save, Loader2, MoreVertical, Layers, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
 import { buildJson } from '@/lib/message-builder';
+import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
 
@@ -22,17 +23,21 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
+  const isViberPlatform = message.platform === 'viber';
   const mediaInvalid =
     !isHtmlPlatform &&
     ((message.mediaType !== 'none' && message.mediaType !== 'album' && !message.mediaUrl.trim()) ||
       (isAlbum && albumUrls.length < 2));
   const textEmpty = !message.text.trim();
+  const smsEmpty = !(message.smsText && message.smsText.trim());
   const hasValidMedia =
     (message.mediaType !== 'none' && message.mediaType !== 'album' && !!message.mediaUrl.trim()) ||
     (isAlbum && albumUrls.length >= 2);
   const emptyTemplate = isHtmlPlatform
     ? (!message.subject.trim() || textEmpty)
-    : (textEmpty && !hasValidMedia);
+    : isViberPlatform
+      ? (textEmpty && smsEmpty)
+      : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
