@@ -597,6 +597,9 @@ export default function EditorPanel() {
               Кнопок нет. Нажмите «Добавить ряд», чтобы построить клавиатуру (до 24 рядов, до 6 колонок в строке).
             </p>
           )}
+          <p className="text-[11px] text-muted-foreground mb-2">
+            Максимум 6 колонок в ряду — лишние кнопки в Viber попадут на новую строку.
+          </p>
           <div className="space-y-3">
             {viberKb.rows.map((row, rIdx) => {
               const sumCols = row.buttons.reduce((s, b) => s + (b.columns || 0), 0);
@@ -629,7 +632,7 @@ export default function EditorPanel() {
                     <div key={btn.id} className="rounded-md border border-border/70 bg-muted/30 p-2 space-y-2">
                       <div className="flex items-start gap-2">
                         <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 flex-wrap">
                             {[
                               { label: '<b>', snippet: '<b>' },
                               { label: '</b>', snippet: '</b>' },
@@ -645,7 +648,44 @@ export default function EditorPanel() {
                                 {t.label}
                               </button>
                             ))}
-                            <span className="text-[10px] text-muted-foreground ml-1">форматирование</span>
+                            <button
+                              type="button"
+                              title="Белый текст"
+                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, "<font color='#FFFFFF'>"); }}
+                              className="px-1.5 py-0.5 rounded border border-border bg-[#1A2229] text-[10px] font-mono text-white hover:border-primary/40 transition-colors"
+                            >
+                              A⬜
+                            </button>
+                            <button
+                              type="button"
+                              title="Чёрный текст"
+                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, "<font color='#000000'>"); }}
+                              className="px-1.5 py-0.5 rounded border border-border bg-white text-[10px] font-mono text-black hover:border-primary/40 transition-colors"
+                            >
+                              A⬛
+                            </button>
+                            <select
+                              defaultValue=""
+                              onChange={e => {
+                                const v = e.target.value;
+                                if (!v) return;
+                                insertIntoKbBtnText(row.id, btn.id, btn.text, `<font size='${v}'>`);
+                                e.target.value = '';
+                              }}
+                              className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground"
+                              title="Размер текста"
+                            >
+                              <option value="">size…</option>
+                              {[12, 14, 16, 18, 20, 24, 28, 32].map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                            <button
+                              type="button"
+                              title="Закрыть <font>"
+                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, '</font>'); }}
+                              className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                            >
+                              {'</font>'}
+                            </button>
                           </div>
                           <textarea
                             id={`viber-btn-text-${btn.id}`}
@@ -765,10 +805,6 @@ export default function EditorPanel() {
                             <option value="bottom">bottom</option>
                           </select>
                         </label>
-                      </div>
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <span className="inline-block w-3 h-3 rounded-sm border border-border" style={{ backgroundColor: VIBER_BTN_BG }} />
-                        Цвет фона <span className="font-mono">{VIBER_BTN_BG}</span> (фиксирован)
                       </div>
                     </div>
                   ))}

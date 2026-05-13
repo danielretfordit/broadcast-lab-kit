@@ -60,7 +60,7 @@ export interface MessageData {
 
 export const VIBER_BTN_BG = '#FF7300';
 export const VIBER_KB_BG = '#ffffff';
-export const VIBER_BTN_BG_PALETTE = ['#FF7300', '#1A2229', '#343F49', '#F5F7F9', '#FFFFFF', '#0054A6'] as const;
+export const VIBER_BTN_BG_PALETTE = ['#FF7300', '#1A2229', '#343F49', '#F5F7F9', '#FFFFFF'] as const;
 
 export function createEmptyViberButton(): ViberKbButton {
   return {

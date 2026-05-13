@@ -94,11 +94,7 @@ function PlatformIcon({ p }: { p: Platform }) {
     );
   }
   if (p === 'viber_bot') {
-    return (
-      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white">
-        <ViberBrandIcon className="w-4 h-4" />
-      </div>
-    );
+    return <ViberBrandIcon className="w-7 h-7" style={{ color: '#7360F2' }} />;
   }
   if (p === 'sms') {
     return (

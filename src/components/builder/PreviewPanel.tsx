@@ -186,14 +186,17 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
         ) : (
           <>
             <div className="flex items-center gap-2 mb-4">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-                isTelegram ? 'bg-[hsl(200,80%,50%)]' : (isViber || isViberBot) ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
-              }`}>
-                {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
-                {isViber && <MessageSquare size={14} className="text-white" />}
-                {isViberBot && <ViberBrandIcon className="w-4 h-4 text-white" />}
-                {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
-              </div>
+              {isViberBot ? (
+                <ViberBrandIcon className="w-8 h-8" style={{ color: '#7360F2' }} />
+              ) : (
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
+                  isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
+                }`}>
+                  {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
+                  {isViber && <MessageSquare size={14} className="text-white" />}
+                  {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
+                </div>
+              )}
               <div>
                 <p className="text-sm font-semibold text-foreground">{platformLabel} Preview</p>
                 <p className="text-[10px] text-success font-medium">online</p>
@@ -451,13 +454,34 @@ function AlbumGrid({ urls }: { urls: string[] }) {
 
 function renderViberBtnText(raw: string): string {
   const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
-  const allowed = /<\/?(b|i|u)>/gi;
+  // Allowed: <b>, <i>, <u>, </b>, </i>, </u>, <font color="#hex" size="N">, </font>
+  const tagRe = /<\/?(?:b|i|u|font)(?:\s[^>]*)?>/gi;
   let out = '';
   let last = 0;
   let m: RegExpExecArray | null;
-  while ((m = allowed.exec(raw)) !== null) {
-    out += escape(raw.slice(last, m.index)) + m[0].toLowerCase();
-    last = m.index + m[0].length;
+  while ((m = tagRe.exec(raw)) !== null) {
+    out += escape(raw.slice(last, m.index));
+    const tag = m[0];
+    const lower = tag.toLowerCase();
+    if (/^<\/(b|i|u)>$/.test(lower)) {
+      out += lower;
+    } else if (/^<(b|i|u)>$/.test(lower)) {
+      out += lower;
+    } else if (/^<\/font>$/.test(lower)) {
+      out += '</span>';
+    } else if (lower.startsWith('<font')) {
+      const colorM = /color\s*=\s*['"]?(#[0-9a-f]{6})['"]?/i.exec(tag);
+      const sizeM = /size\s*=\s*['"]?(\d{1,2})['"]?/i.exec(tag);
+      const styles: string[] = [];
+      if (colorM) styles.push(`color:${colorM[1]}`);
+      if (sizeM) {
+        const n = Math.max(12, Math.min(32, Number(sizeM[1])));
+        // scale down for compact preview while preserving relative size
+        styles.push(`font-size:${(n * 0.7).toFixed(1)}px`);
+      }
+      out += `<span style="${styles.join(';')}">`;
+    }
+    last = m.index + tag.length;
   }
   out += escape(raw.slice(last));
   return out.replace(/\n/g, '<br/>');
@@ -469,9 +493,21 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
   const vAlign: Record<string, string> = { top: 'items-start', middle: 'items-center', bottom: 'items-end' };
   const lightBg = new Set(['#F5F7F9', '#FFFFFF']);
 
+  const allButtons = rows.flatMap(row => row.buttons);
+
   return (
-    <div className="rounded-lg p-1.5 grid grid-cols-6 gap-1 border border-border" style={{ backgroundColor: VIBER_KB_BG }}>
-      {rows.flatMap(row => row.buttons).map(b => {
+    <div
+      className="rounded-lg p-1.5 border border-border"
+      style={{
+        backgroundColor: VIBER_KB_BG,
+        display: 'grid',
+        gridTemplateColumns: 'repeat(6, 1fr)',
+        gridAutoRows: '36px',
+        gridAutoFlow: 'dense',
+        gap: '4px',
+      }}
+    >
+      {allButtons.map(b => {
         const cols = Math.max(1, Math.min(6, b.columns));
         const rs = Math.max(1, Math.min(2, b.rows));
         const bg = b.bgColor || VIBER_BTN_BG;
@@ -479,12 +515,12 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
         return (
           <div
             key={b.id}
-            className={`rounded-md px-2 py-2 flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
+            className={`rounded-md px-2 py-1 flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
             style={{
               backgroundColor: bg,
               color: textColor,
               gridColumn: `span ${cols} / span ${cols}`,
-              minHeight: `${rs * 36}px`,
+              gridRow: `span ${rs} / span ${rs}`,
             }}
             title={b.actionType === 'open-url' ? b.actionBody : undefined}
           >
