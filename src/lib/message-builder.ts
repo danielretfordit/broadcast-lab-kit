@@ -14,6 +14,32 @@ export interface ButtonRow {
   buttons: InlineButton[];
 }
 
+export type ViberKbActionType = 'reply' | 'open-url' | 'share-phone' | 'location-picker';
+export type ViberKbTextSize = 'small' | 'regular' | 'large';
+export type ViberKbAlignH = 'left' | 'center' | 'right';
+export type ViberKbAlignV = 'top' | 'middle' | 'bottom';
+
+export interface ViberKbButton {
+  id: string;
+  text: string;
+  columns: number; // 1..6
+  rows: number; // 1..2
+  actionType: ViberKbActionType;
+  actionBody: string;
+  textSize: ViberKbTextSize;
+  textHAlign: ViberKbAlignH;
+  textVAlign: ViberKbAlignV;
+}
+
+export interface ViberKbRow {
+  id: string;
+  buttons: ViberKbButton[];
+}
+
+export interface ViberKeyboard {
+  rows: ViberKbRow[];
+}
+
 export interface MessageData {
   platform: Platform;
   chatId: string;
@@ -28,6 +54,24 @@ export interface MessageData {
   viberRoute?: string;
   viberBotSenderName?: string;
   viberBotTrackingData?: string;
+  viberKeyboard?: ViberKeyboard;
+}
+
+export const VIBER_BTN_BG = '#ffa000';
+export const VIBER_KB_BG = '#ffffff';
+
+export function createEmptyViberButton(): ViberKbButton {
+  return {
+    id: generateId(),
+    text: 'Кнопка',
+    columns: 6,
+    rows: 1,
+    actionType: 'reply',
+    actionBody: 'reply',
+    textSize: 'regular',
+    textHAlign: 'center',
+    textVAlign: 'middle',
+  };
 }
 
 export function generateId(): string {
@@ -217,21 +261,58 @@ export function buildJson(msg: MessageData): object {
   return buildEmailJson(msg);
 }
 
+function buildViberKeyboard(kb?: ViberKeyboard): Record<string, unknown> | null {
+  if (!kb || !kb.rows || kb.rows.length === 0) return null;
+  const buttons: Record<string, unknown>[] = [];
+  for (const row of kb.rows) {
+    for (const b of row.buttons) {
+      const sizeMap: Record<ViberKbTextSize, string> = { small: 'small', regular: 'regular', large: 'large' };
+      const vMap: Record<ViberKbAlignV, string> = { top: 'top', middle: 'middle', bottom: 'bottom' };
+      const hMap: Record<ViberKbAlignH, string> = { left: 'left', center: 'center', right: 'right' };
+      const actionMap: Record<ViberKbActionType, string> = {
+        'reply': 'reply',
+        'open-url': 'open-url',
+        'share-phone': 'share-phone',
+        'location-picker': 'location-picker',
+      };
+      buttons.push({
+        Columns: Math.max(1, Math.min(6, b.columns || 6)),
+        Rows: Math.max(1, Math.min(2, b.rows || 1)),
+        BgColor: VIBER_BTN_BG,
+        ActionType: actionMap[b.actionType],
+        ActionBody: b.actionBody || '',
+        Text: b.text || '',
+        TextSize: sizeMap[b.textSize],
+        TextVAlign: vMap[b.textVAlign],
+        TextHAlign: hMap[b.textHAlign],
+        TextOpacity: 100,
+      });
+    }
+  }
+  if (buttons.length === 0) return null;
+  return {
+    Type: 'keyboard',
+    BgColor: VIBER_KB_BG,
+    Buttons: buttons,
+  };
+}
+
 export function buildViberBotJson(msg: MessageData): object {
   const base: Record<string, unknown> = {
     receiver: '<service_user_id>',
     min_api_version: 1,
-    sender: { name: msg.viberBotSenderName || '***' },
+    sender: { name: msg.viberBotSenderName || 'ARMTEK | ЧАТ-БОТ | BY' },
     tracking_data: msg.viberBotTrackingData || 'tracking data',
     text: msg.text || '',
   };
-  if (msg.mediaType !== 'none' && msg.mediaUrl) {
-    const typeMap: Record<string, string> = { photo: 'picture', video: 'video', document: 'file' };
-    base.type = typeMap[msg.mediaType] || 'text';
+  if (msg.mediaType === 'photo' && msg.mediaUrl) {
+    base.type = 'picture';
     base.media = msg.mediaUrl;
   } else {
     base.type = 'text';
   }
+  const keyboard = buildViberKeyboard(msg.viberKeyboard);
+  if (keyboard) base.keyboard = keyboard;
   return base;
 }
 
@@ -249,16 +330,47 @@ export function parseViberBotJson(parsed: Record<string, unknown>): Partial<Mess
   if (typeof parsed.tracking_data === 'string') result.viberBotTrackingData = parsed.tracking_data;
   const type = typeof parsed.type === 'string' ? parsed.type : 'text';
   const media = typeof parsed.media === 'string' ? parsed.media : '';
-  if (media) {
-    if (type === 'picture') result.mediaType = 'photo';
-    else if (type === 'video') result.mediaType = 'video';
-    else if (type === 'file') result.mediaType = 'document';
+  if (media && type === 'picture') {
+    result.mediaType = 'photo';
     result.mediaUrl = media;
   }
+
+  const keyboard = parsed.keyboard as Record<string, unknown> | undefined;
+  if (keyboard && Array.isArray(keyboard.Buttons)) {
+    const btns = keyboard.Buttons as Record<string, unknown>[];
+    const rows: ViberKbRow[] = [];
+    let curRow: ViberKbRow = { id: generateId(), buttons: [] };
+    let cols = 0;
+    for (const b of btns) {
+      const c = Math.max(1, Math.min(6, Number(b.Columns) || 6));
+      if (cols + c > 6 && curRow.buttons.length > 0) {
+        rows.push(curRow);
+        curRow = { id: generateId(), buttons: [] };
+        cols = 0;
+      }
+      const at = String(b.ActionType || 'reply') as ViberKbActionType;
+      const ts = String(b.TextSize || 'regular') as ViberKbTextSize;
+      const ha = String(b.TextHAlign || 'center') as ViberKbAlignH;
+      const va = String(b.TextVAlign || 'middle') as ViberKbAlignV;
+      curRow.buttons.push({
+        id: generateId(),
+        text: typeof b.Text === 'string' ? b.Text : '',
+        columns: c,
+        rows: Math.max(1, Math.min(2, Number(b.Rows) || 1)),
+        actionType: ['reply', 'open-url', 'share-phone', 'location-picker'].includes(at) ? at : 'reply',
+        actionBody: typeof b.ActionBody === 'string' ? b.ActionBody : '',
+        textSize: ['small', 'regular', 'large'].includes(ts) ? ts : 'regular',
+        textHAlign: ['left', 'center', 'right'].includes(ha) ? ha : 'center',
+        textVAlign: ['top', 'middle', 'bottom'].includes(va) ? va : 'middle',
+      });
+      cols += c;
+    }
+    if (curRow.buttons.length > 0) rows.push(curRow);
+    result.viberKeyboard = { rows };
+  }
+
   return result;
 }
-
-/** Determine Telegram API method from message */
 export function getTelegramMethod(msg: MessageData): string {
   if (msg.mediaType === 'album') return 'sendMediaGroup';
   if (msg.mediaType !== 'none' && msg.mediaUrl) {

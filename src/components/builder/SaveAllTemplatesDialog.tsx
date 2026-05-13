@@ -8,6 +8,8 @@ import { loadDraft } from '@/contexts/MessageContext';
 import { useMessage } from '@/contexts/MessageContext';
 import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildViberBotJson, buildSmsJson, MessageData, Platform } from '@/lib/message-builder';
 import maxLogo from '@/assets/max-logo.png';
+import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
+import { Clock } from 'lucide-react';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
@@ -16,11 +18,11 @@ interface Props {
   onOpenChange: (v: boolean) => void;
 }
 
-const PLATFORMS: { key: Platform; label: string; paid?: boolean }[] = [
+const PLATFORMS: { key: Platform; label: string; paid?: boolean; dialog24h?: boolean }[] = [
   { key: 'telegram', label: 'Telegram' },
   { key: 'max', label: 'MAX' },
   { key: 'viber_business', label: 'Viber Business / SMS', paid: true },
-  { key: 'viber_bot', label: 'Viber', paid: true },
+  { key: 'viber_bot', label: 'Viber', dialog24h: true },
   { key: 'sms', label: 'SMS', paid: true },
   { key: 'html', label: 'HTML (Email)' },
 ];
@@ -93,8 +95,8 @@ function PlatformIcon({ p }: { p: Platform }) {
   }
   if (p === 'viber_bot') {
     return (
-      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white text-[10px] font-bold">
-        V
+      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white">
+        <ViberBrandIcon className="w-4 h-4" />
       </div>
     );
   }
@@ -224,6 +226,14 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
                   <span className="text-sm font-medium text-foreground inline-flex items-center gap-1">
                     {p.label}
                     {p.paid && <Coins size={12} className="text-amber-500/80" />}
+                    {p.dialog24h && (
+                      <span
+                        title="Окно 24 часа: можно писать только в течение 24 ч после последнего сообщения пользователя"
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold leading-none"
+                      >
+                        <Clock size={9} /> 24h
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div>

@@ -4,6 +4,7 @@ import { Platform , parseJsonToMessage } from '@/lib/message-builder';
 import { useProjectInfo } from '@/hooks/useProjectInfo';
 import { Info, Code2, Megaphone, Mail, RotateCcw, Lock, Coins, Clock } from 'lucide-react';
 import maxLogo from '@/assets/max-logo.png';
+import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { useSearchParams } from 'react-router-dom';
@@ -21,17 +22,10 @@ type PlatformTab = {
   iconColor?: string;
   iconClassName?: string;
   paid?: boolean;
+  dialog24h?: boolean;
 };
 
-function ViberBrandIcon({ className }: { className?: string }) {
-  // Official Viber-style brand mark (purple phone)
-  return (
-    <svg viewBox="0 0 512 512" fill="currentColor" className={className} aria-hidden="true">
-      <path fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="22" d="M269 186a30 30 0 0 1 31 31m-38-58a64 64 0 0 1 64 67m-73-93a97 97 0 0 1 99 104"/>
-      <path d="M288 274q10-13 24-4l36 27q8 10-7 28t-28 15q-53-12-102-60t-61-104q0-20 25-34 13-9 22 5l25 35q6 12-7 22c-39 15 51 112 73 70zM95 232c0 78 14 95 36 118 7 7 32 19 38 19v69c0 4 4 7 8 3l53-63 26 1c144 0 161-56 161-147S400 85 256 85 95 141 95 232zm-30 0c0-126 55-177 191-177s191 51 191 177-55 177-191 177c-10 0-18 0-32-2l-38 43c-7 8-28 11-28-13v-42c-6 0-20-6-39-18-19-13-54-44-54-145z"/>
-    </svg>
-  );
-}
+// ViberBrandIcon now imported from shared component
 
 function ViberBusinessIcon({ className }: { className?: string }) {
   // Chat-bubble with dots — Viber Business / SMS hybrid channel
@@ -52,7 +46,7 @@ const platforms: PlatformTab[] = [
   { id: 'max', label: 'MAX', logo: maxLogo },
   { id: 'viber_business', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
   { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-5 h-5', paid: true },
-  { id: 'viber_bot', label: 'Viber', CustomIcon: ViberBrandIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
+  { id: 'viber_bot', label: 'Viber', CustomIcon: ViberBrandIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', dialog24h: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
@@ -254,6 +248,14 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
                 ) : null}
                 {p.label}
                 {p.paid && !isLocked && <Coins size={10} className="text-amber-500/80 ml-0.5" />}
+                {p.dialog24h && !isLocked && (
+                  <span
+                    title="Окно 24 часа: можно писать только в течение 24 ч после последнего сообщения пользователя"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold leading-none ml-0.5"
+                  >
+                    <Clock size={9} /> 24h
+                  </span>
+                )}
               </button>
             );
           })}

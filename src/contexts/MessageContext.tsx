@@ -38,11 +38,16 @@ export function loadDraft(platform: Platform): MessageData {
       else if (platform === 'viber_bot') merged.parseMode = 'Markdown';
       else if (platform === 'sms') merged.parseMode = 'Markdown';
       else if (platform === 'html') merged.parseMode = 'HTML';
+      if (platform === 'viber_bot' && !merged.viberBotSenderName) {
+        merged.viberBotSenderName = 'ARMTEK | ЧАТ-БОТ | BY';
+      }
       return merged;
     }
   } catch {}
   const empty = createEmptyMessage();
-  return { ...empty, platform, parseMode: defaultParseMode(platform) };
+  const base = { ...empty, platform, parseMode: defaultParseMode(platform) };
+  if (platform === 'viber_bot') base.viberBotSenderName = 'ARMTEK | ЧАТ-БОТ | BY';
+  return base;
 }
 
 function saveDraft(msg: MessageData) {

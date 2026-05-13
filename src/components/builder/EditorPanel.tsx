@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { generateId, type ButtonRow, type InlineButton } from '@/lib/message-builder';
+import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG } from '@/lib/message-builder';
 import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -114,6 +114,43 @@ export default function EditorPanel() {
     ).filter(r => r.buttons.length > 0));
   };
 
+  // ---- Viber keyboard helpers ----
+  const viberKb: ViberKeyboard = message.viberKeyboard || { rows: [] };
+  const setViberKb = (kb: ViberKeyboard) => updateField('viberKeyboard', kb);
+  const addKbRow = () => {
+    if (viberKb.rows.length >= 24) return;
+    setViberKb({ rows: [...viberKb.rows, { id: generateId(), buttons: [createEmptyViberButton()] }] });
+  };
+  const removeKbRow = (rowId: string) => {
+    setViberKb({ rows: viberKb.rows.filter(r => r.id !== rowId) });
+  };
+  const addKbButton = (rowId: string) => {
+    setViberKb({
+      rows: viberKb.rows.map(r => r.id === rowId
+        ? { ...r, buttons: [...r.buttons, createEmptyViberButton()] }
+        : r),
+    });
+  };
+  const removeKbButton = (rowId: string, btnId: string) => {
+    setViberKb({
+      rows: viberKb.rows
+        .map(r => r.id === rowId ? { ...r, buttons: r.buttons.filter(b => b.id !== btnId) } : r)
+        .filter(r => r.buttons.length > 0),
+    });
+  };
+  const updateKbButton = <K extends keyof ViberKbButton>(rowId: string, btnId: string, key: K, value: ViberKbButton[K]) => {
+    setViberKb({
+      rows: viberKb.rows.map(r => r.id === rowId
+        ? { ...r, buttons: r.buttons.map(b => {
+            if (b.id !== btnId) return b;
+            const next = { ...b, [key]: value } as ViberKbButton;
+            if (key === 'actionType' && value === 'share-phone') next.actionBody = 'phone-reply';
+            return next;
+          }) }
+        : r),
+    });
+  };
+
   const mediaTypes = isViber
     ? [
         { id: 'none' as const, icon: null, label: 'Нет' },
@@ -123,8 +160,6 @@ export default function EditorPanel() {
       ? [
           { id: 'none' as const, icon: null, label: 'Нет' },
           { id: 'photo' as const, icon: Image, label: 'Фото' },
-          { id: 'video' as const, icon: Video, label: 'Видео' },
-          { id: 'document' as const, icon: FileText, label: 'Файл' },
         ]
       : [
           { id: 'none' as const, icon: null, label: 'Нет' },
@@ -526,6 +561,172 @@ export default function EditorPanel() {
                 )}
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+
+      {/* Viber Bot keyboard editor */}
+      {isViberBot && (
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <label className="section-label !mb-0">Клавиатура Viber</label>
+            <button
+              type="button"
+              onClick={addKbRow}
+              disabled={viberKb.rows.length >= 24}
+              className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Plus size={12} /> Добавить ряд
+            </button>
+          </div>
+          {viberKb.rows.length === 0 && (
+            <p className="text-[11px] text-muted-foreground italic">
+              Кнопок нет. Нажмите «Добавить ряд», чтобы построить клавиатуру (до 24 рядов, до 6 колонок в строке).
+            </p>
+          )}
+          <div className="space-y-3">
+            {viberKb.rows.map((row, rIdx) => {
+              const sumCols = row.buttons.reduce((s, b) => s + (b.columns || 0), 0);
+              const overflow = sumCols > 6;
+              return (
+                <div key={row.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground">
+                      Ряд {rIdx + 1} · {sumCols}/6 колонок
+                      {overflow && <span className="text-destructive ml-1">⚠ перебор</span>}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => addKbButton(row.id)}
+                        className="text-[11px] text-primary hover:text-primary/80 font-semibold"
+                      >
+                        + Кнопка
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeKbRow(row.id)}
+                        className="text-[11px] text-muted-foreground hover:text-destructive font-medium"
+                      >
+                        Удалить ряд
+                      </button>
+                    </div>
+                  </div>
+                  {row.buttons.map(btn => (
+                    <div key={btn.id} className="rounded-md border border-border/70 bg-muted/30 p-2 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <textarea
+                          value={btn.text}
+                          onChange={e => updateKbButton(row.id, btn.id, 'text', e.target.value)}
+                          placeholder="Текст (можно <b>, <i>, <u>, эмодзи)"
+                          className="flex-1 px-2 py-1.5 rounded-md bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y min-h-[44px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeKbButton(row.id, btn.id)}
+                          className="mt-1 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Удалить кнопку"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="text-[10px] text-muted-foreground">
+                          Тип действия
+                          <select
+                            value={btn.actionType}
+                            onChange={e => updateKbButton(row.id, btn.id, 'actionType', e.target.value as ViberKbActionType)}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground"
+                          >
+                            <option value="reply">Ответ</option>
+                            <option value="open-url">Открыть URL</option>
+                            <option value="share-phone">Поделиться телефоном</option>
+                            <option value="location-picker">Геолокация</option>
+                          </select>
+                        </label>
+                        <label className="text-[10px] text-muted-foreground">
+                          {btn.actionType === 'open-url' ? 'URL' : btn.actionType === 'share-phone' ? 'Action body (auto)' : 'Payload / body'}
+                          <input
+                            type="text"
+                            value={btn.actionBody}
+                            disabled={btn.actionType === 'share-phone'}
+                            onChange={e => updateKbButton(row.id, btn.id, 'actionBody', e.target.value)}
+                            placeholder={btn.actionType === 'open-url' ? 'https://...' : btn.actionType === 'share-phone' ? 'phone-reply' : 'reply'}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground font-mono disabled:opacity-60"
+                          />
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <label className="text-[10px] text-muted-foreground">
+                          Columns
+                          <select
+                            value={btn.columns}
+                            onChange={e => updateKbButton(row.id, btn.id, 'columns', Number(e.target.value))}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground"
+                          >
+                            {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                        </label>
+                        <label className="text-[10px] text-muted-foreground">
+                          Rows
+                          <select
+                            value={btn.rows}
+                            onChange={e => updateKbButton(row.id, btn.id, 'rows', Number(e.target.value))}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground"
+                          >
+                            <option value={1}>1</option>
+                            <option value={2}>2</option>
+                          </select>
+                        </label>
+                        <label className="text-[10px] text-muted-foreground">
+                          Размер
+                          <select
+                            value={btn.textSize}
+                            onChange={e => updateKbButton(row.id, btn.id, 'textSize', e.target.value as ViberKbTextSize)}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground"
+                          >
+                            <option value="small">small</option>
+                            <option value="regular">regular</option>
+                            <option value="large">large</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="text-[10px] text-muted-foreground">
+                          Гориз. выравнивание
+                          <select
+                            value={btn.textHAlign}
+                            onChange={e => updateKbButton(row.id, btn.id, 'textHAlign', e.target.value as ViberKbAlignH)}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground"
+                          >
+                            <option value="left">left</option>
+                            <option value="center">center</option>
+                            <option value="right">right</option>
+                          </select>
+                        </label>
+                        <label className="text-[10px] text-muted-foreground">
+                          Верт. выравнивание
+                          <select
+                            value={btn.textVAlign}
+                            onChange={e => updateKbButton(row.id, btn.id, 'textVAlign', e.target.value as ViberKbAlignV)}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground"
+                          >
+                            <option value="top">top</option>
+                            <option value="middle">middle</option>
+                            <option value="bottom">bottom</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        <span className="inline-block w-3 h-3 rounded-sm border border-border" style={{ backgroundColor: VIBER_BTN_BG }} />
+                        Цвет фона <span className="font-mono">{VIBER_BTN_BG}</span> (фиксирован)
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
