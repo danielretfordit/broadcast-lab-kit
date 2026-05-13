@@ -114,7 +114,44 @@ export default function EditorPanel() {
     ).filter(r => r.buttons.length > 0));
   };
 
-  const mediaTypes = isViber
+  // ---- Viber keyboard helpers ----
+  const viberKb: ViberKeyboard = message.viberKeyboard || { rows: [] };
+  const setViberKb = (kb: ViberKeyboard) => updateField('viberKeyboard', kb);
+  const addKbRow = () => {
+    if (viberKb.rows.length >= 24) return;
+    setViberKb({ rows: [...viberKb.rows, { id: generateId(), buttons: [createEmptyViberButton()] }] });
+  };
+  const removeKbRow = (rowId: string) => {
+    setViberKb({ rows: viberKb.rows.filter(r => r.id !== rowId) });
+  };
+  const addKbButton = (rowId: string) => {
+    setViberKb({
+      rows: viberKb.rows.map(r => r.id === rowId
+        ? { ...r, buttons: [...r.buttons, createEmptyViberButton()] }
+        : r),
+    });
+  };
+  const removeKbButton = (rowId: string, btnId: string) => {
+    setViberKb({
+      rows: viberKb.rows
+        .map(r => r.id === rowId ? { ...r, buttons: r.buttons.filter(b => b.id !== btnId) } : r)
+        .filter(r => r.buttons.length > 0),
+    });
+  };
+  const updateKbButton = <K extends keyof ViberKbButton>(rowId: string, btnId: string, key: K, value: ViberKbButton[K]) => {
+    setViberKb({
+      rows: viberKb.rows.map(r => r.id === rowId
+        ? { ...r, buttons: r.buttons.map(b => {
+            if (b.id !== btnId) return b;
+            const next = { ...b, [key]: value } as ViberKbButton;
+            if (key === 'actionType' && value === 'share-phone') next.actionBody = 'phone-reply';
+            return next;
+          }) }
+        : r),
+    });
+  };
+
+
     ? [
         { id: 'none' as const, icon: null, label: 'Нет' },
         { id: 'photo' as const, icon: Image, label: 'Фото' },
