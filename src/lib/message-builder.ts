@@ -172,12 +172,13 @@ export function buildViberJson(msg: MessageData): object {
   }
 
   const btn = msg.buttonRows[0]?.buttons[0];
+  const outRoute = route === 'viber-only' ? 'viber' : route;
   const base: Record<string, unknown> = {
     login: '******',
     password: '******',
     phones: '<phone>',
     message: msg.text || '',
-    route,
+    route: outRoute,
     rus: '1',
     image_url: msg.mediaUrl || '',
     btn_url: btn?.url || '',
@@ -333,10 +334,12 @@ export function parseEmailJson(parsed: Record<string, unknown>): Partial<Message
 }
 
 export function parseViberJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const rawRoute = typeof parsed.route === 'string' ? parsed.route : 'viber(60)-sms';
+  const normalizedRoute = rawRoute === 'viber' ? 'viber-only' : rawRoute === 'sms' ? 'sms-only' : rawRoute;
   const result: Partial<MessageData> = {
     text: typeof parsed.message === 'string' ? parsed.message : '',
     smsText: typeof parsed.param_sms === 'string' ? parsed.param_sms : '',
-    viberRoute: typeof parsed.route === 'string' ? parsed.route : 'viber(60)-sms',
+    viberRoute: normalizedRoute,
     parseMode: 'Markdown',
     mediaUrls: [],
     buttonRows: [],
