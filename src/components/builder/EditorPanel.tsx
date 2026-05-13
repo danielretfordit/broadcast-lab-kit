@@ -14,7 +14,8 @@ export default function EditorPanel() {
   const [showAi, setShowAi] = useState(false);
 
   const isHtml = message.platform === 'html';
-  const isViber = message.platform === 'viber';
+  const isViber = message.platform === 'viber_business';
+  const isViberBot = message.platform === 'viber_bot';
   const isMax = message.platform === 'max';
   const isSms = message.platform === 'sms';
   const isAlbum = message.mediaType === 'album';
@@ -53,7 +54,7 @@ export default function EditorPanel() {
       }
     } else if (message.parseMode === 'MarkdownV2' || message.parseMode === 'Markdown') {
       const isMaxSyntax = message.platform === 'max';
-      const isViberSyntax = message.platform === 'viber';
+      const isViberSyntax = message.platform === 'viber_business' || message.platform === 'viber_bot';
       if (tag === 'bold') wrapped = isMaxSyntax ? `**${selected || 'текст'}**` : `*${selected || 'текст'}*`;
       else if (tag === 'italic') wrapped = isMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
       else if (tag === 'underline') wrapped = isMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
@@ -118,13 +119,20 @@ export default function EditorPanel() {
         { id: 'none' as const, icon: null, label: 'Нет' },
         { id: 'photo' as const, icon: Image, label: 'Фото' },
       ]
-    : [
-        { id: 'none' as const, icon: null, label: 'Нет' },
-        { id: 'photo' as const, icon: Image, label: 'Фото' },
-        { id: 'video' as const, icon: Video, label: 'Видео' },
-        { id: 'document' as const, icon: FileText, label: 'Файл' },
-        { id: 'album' as const, icon: Images, label: 'Альбом' },
-      ];
+    : isViberBot
+      ? [
+          { id: 'none' as const, icon: null, label: 'Нет' },
+          { id: 'photo' as const, icon: Image, label: 'Фото' },
+          { id: 'video' as const, icon: Video, label: 'Видео' },
+          { id: 'document' as const, icon: FileText, label: 'Файл' },
+        ]
+      : [
+          { id: 'none' as const, icon: null, label: 'Нет' },
+          { id: 'photo' as const, icon: Image, label: 'Фото' },
+          { id: 'video' as const, icon: Video, label: 'Видео' },
+          { id: 'document' as const, icon: FileText, label: 'Файл' },
+          { id: 'album' as const, icon: Images, label: 'Альбом' },
+        ];
 
   const updateAlbumUrl = (idx: number, value: string) => {
     const next = [...albumUrls];
@@ -348,7 +356,7 @@ export default function EditorPanel() {
 
         {!isHtml && (
           <div className="flex items-center gap-1 mb-2">
-            {(isViber
+            {((isViber || isViberBot)
               ? [
                   { tag: 'bold', icon: Bold, title: 'Жирный' },
                   { tag: 'italic', icon: Italic, title: 'Курсив' },
@@ -393,7 +401,7 @@ export default function EditorPanel() {
               message.parseMode === 'MarkdownV2'
                 ? '*Жирный* _курсив_ __подчёркнутый__ [ссылка](url)\n> Цитата'
                 : message.parseMode === 'Markdown'
-                  ? isViber
+                  ? (isViber || isViberBot)
                     ? '*Жирный* _курсив_ ~зачёркнутый~ ```моноширинный```'
                     : `**Жирный** *курсив* ++подчёркнутый++ ~~зачёркнутый~~ \`код\`\n[ссылка](https://...)${isMax ? '\n# Заголовок' : ''}\n> Цитата`
                   : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
@@ -442,7 +450,7 @@ export default function EditorPanel() {
       )}
 
       {/* Inline buttons */}
-      {!isHtml && showViberContent && (
+      {!isHtml && showViberContent && !isViberBot && (
         <section>
           <div className="flex items-center justify-between mb-2">
             <label className="section-label !mb-0">

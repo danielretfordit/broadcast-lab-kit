@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'react-router-dom';
 import { loadDraft } from '@/contexts/MessageContext';
 import { useMessage } from '@/contexts/MessageContext';
-import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildSmsJson, MessageData, Platform } from '@/lib/message-builder';
+import { buildEmailJson, buildMaxJson, buildTelegramJson, buildViberJson, buildViberBotJson, buildSmsJson, MessageData, Platform } from '@/lib/message-builder';
 import maxLogo from '@/assets/max-logo.png';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
@@ -19,7 +19,8 @@ interface Props {
 const PLATFORMS: { key: Platform; label: string; paid?: boolean }[] = [
   { key: 'telegram', label: 'Telegram' },
   { key: 'max', label: 'MAX' },
-  { key: 'viber', label: 'Viber Business / SMS', paid: true },
+  { key: 'viber_business', label: 'Viber Business / SMS', paid: true },
+  { key: 'viber_bot', label: 'Viber', paid: true },
   { key: 'sms', label: 'SMS', paid: true },
   { key: 'html', label: 'HTML (Email)' },
 ];
@@ -31,7 +32,7 @@ function isFilled(m: MessageData): boolean {
   const hasValidMedia =
     (m.mediaType !== 'none' && m.mediaType !== 'album' && !!m.mediaUrl.trim()) ||
     (isAlbum && albumUrls.length >= 2);
-  if (m.platform === 'viber') {
+  if (m.platform === 'viber_business') {
     const route = m.viberRoute || 'viber(60)-sms';
     const textOk = !!m.text.trim();
     const smsOk = !!(m.smsText && m.smsText.trim());
@@ -42,6 +43,12 @@ function isFilled(m: MessageData): boolean {
     if (mediaInvalid) return false;
     if (route === 'viber-only') return textOk;
     return textOk && smsOk;
+  }
+  if (m.platform === 'viber_bot') {
+    const textOk = !!m.text.trim();
+    const mediaInvalid = m.mediaType !== 'none' && m.mediaType !== 'album' && !m.mediaUrl.trim();
+    if (mediaInvalid) return false;
+    return textOk || (m.mediaType !== 'none' && !!m.mediaUrl.trim());
   }
   const mediaInvalid =
     m.platform !== 'html' &&
@@ -56,7 +63,8 @@ function isFilled(m: MessageData): boolean {
 function buildFor(p: Platform, m: MessageData): object {
   if (p === 'telegram') return buildTelegramJson(m);
   if (p === 'max') return buildMaxJson(m);
-  if (p === 'viber') return buildViberJson(m);
+  if (p === 'viber_business') return buildViberJson(m);
+  if (p === 'viber_bot') return buildViberBotJson(m);
   if (p === 'sms') return buildSmsJson(m);
   return buildEmailJson(m);
 }
@@ -76,10 +84,17 @@ function PlatformIcon({ p }: { p: Platform }) {
       </div>
     );
   }
-  if (p === 'viber') {
+  if (p === 'viber_business') {
     return (
       <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white">
         <MessageSquare size={14} />
+      </div>
+    );
+  }
+  if (p === 'viber_bot') {
+    return (
+      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white text-[10px] font-bold">
+        V
       </div>
     );
   }
@@ -107,7 +122,8 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
     return {
       telegram: get('telegram'),
       max: get('max'),
-      viber: get('viber'),
+      viber_business: get('viber_business'),
+      viber_bot: get('viber_bot'),
       sms: get('sms'),
       html: get('html'),
     };
@@ -116,13 +132,14 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
   const filledMap = useMemo(() => ({
     telegram: isFilled(drafts.telegram),
     max: isFilled(drafts.max),
-    viber: isFilled(drafts.viber),
+    viber_business: isFilled(drafts.viber_business),
+    viber_bot: isFilled(drafts.viber_bot),
     sms: isFilled(drafts.sms),
     html: isFilled(drafts.html),
   }), [drafts]);
 
   const [selected, setSelected] = useState<Record<Platform, boolean>>({
-    telegram: true, max: true, viber: true, sms: true, html: true,
+    telegram: true, max: true, viber_business: true, viber_bot: true, sms: true, html: true,
   });
 
   // Reset selection on open based on filled state
@@ -131,7 +148,8 @@ export default function SaveAllTemplatesDialog({ open, onOpenChange }: Props) {
       setSelected({
         telegram: filledMap.telegram,
         max: filledMap.max,
-        viber: filledMap.viber,
+        viber_business: filledMap.viber_business,
+        viber_bot: filledMap.viber_bot,
         sms: filledMap.sms,
         html: filledMap.html,
       });

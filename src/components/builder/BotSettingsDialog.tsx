@@ -5,8 +5,11 @@ import { Lock, Trash2 } from 'lucide-react';
 
 const STORAGE_KEY_PREFIX = 'bot-settings:';
 const CHAT_ID_PREFIX = 'bot-settings:chatId:';
+const VIBER_SENDER_KEY = 'bot-settings:viber_bot:sender';
 
-export function getBotToken(platform: 'telegram' | 'max'): string | null {
+type BotPlatform = 'telegram' | 'max' | 'viber_bot';
+
+export function getBotToken(platform: BotPlatform): string | null {
   try {
     return sessionStorage.getItem(`${STORAGE_KEY_PREFIX}${platform}`);
   } catch {
@@ -14,9 +17,17 @@ export function getBotToken(platform: 'telegram' | 'max'): string | null {
   }
 }
 
-export function getTestChatId(platform: 'telegram' | 'max'): string | null {
+export function getTestChatId(platform: BotPlatform): string | null {
   try {
     return sessionStorage.getItem(`${CHAT_ID_PREFIX}${platform}`);
+  } catch {
+    return null;
+  }
+}
+
+export function getViberBotSender(): string | null {
+  try {
+    return sessionStorage.getItem(VIBER_SENDER_KEY);
   } catch {
     return null;
   }
@@ -25,17 +36,19 @@ export function getTestChatId(platform: 'telegram' | 'max'): string | null {
 interface BotSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  platform: 'telegram' | 'max';
+  platform: BotPlatform;
 }
 
 export default function BotSettingsDialog({ open, onOpenChange, platform }: BotSettingsDialogProps) {
   const [token, setToken] = useState('');
   const [chatId, setChatId] = useState('');
+  const [sender, setSender] = useState('');
 
   useEffect(() => {
     if (open) {
       setToken(getBotToken(platform) || '');
       setChatId(getTestChatId(platform) || '');
+      setSender(getViberBotSender() || '');
     }
   }, [open, platform]);
 
@@ -51,6 +64,10 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
       } else {
         sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
       }
+      if (platform === 'viber_bot') {
+        if (sender.trim()) sessionStorage.setItem(VIBER_SENDER_KEY, sender.trim());
+        else sessionStorage.removeItem(VIBER_SENDER_KEY);
+      }
       toast.success('Сохранено в этой сессии');
       onOpenChange(false);
     } catch {
@@ -61,14 +78,18 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
   const clear = () => {
     setToken('');
     setChatId('');
+    setSender('');
     try {
       sessionStorage.removeItem(`${STORAGE_KEY_PREFIX}${platform}`);
       sessionStorage.removeItem(`${CHAT_ID_PREFIX}${platform}`);
+      if (platform === 'viber_bot') sessionStorage.removeItem(VIBER_SENDER_KEY);
     } catch {}
     toast.success('Очищено');
   };
 
   const isMax = platform === 'max';
+  const isViberBot = platform === 'viber_bot';
+  const title = isViberBot ? 'Viber бота' : isMax ? 'MAX бота' : 'Telegram бота';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -76,10 +97,10 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock size={16} className="text-primary" />
-            Настройки {isMax ? 'MAX' : 'Telegram'} бота
+            Настройки {title}
           </DialogTitle>
           <DialogDescription className="text-xs leading-relaxed">
-            Токен и Chat ID хранятся только в этой вкладке браузера и автоматически очищаются при её закрытии.
+            Все значения хранятся только в этой вкладке браузера и автоматически очищаются при её закрытии.
             Никуда не отправляются.
           </DialogDescription>
         </DialogHeader>
@@ -87,35 +108,57 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
         <div className="space-y-3 py-2">
           <div>
             <label className="text-xs font-medium text-foreground mb-1.5 block">
-              {isMax ? 'Access Token' : 'Bot Token'}
+              {isViberBot ? 'Auth Token (X-Viber-Auth-Token)' : isMax ? 'Access Token' : 'Bot Token'}
             </label>
             <input
               type="password"
               value={token}
               onChange={e => setToken(e.target.value)}
-              placeholder={isMax ? 'f9LHodD0cOIR5XiHPjx5...' : '123456:AAH...'}
+              placeholder={isViberBot ? 'aaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-cccccccccccccccc' : isMax ? 'f9LHodD0cOIR5XiHPjx5...' : '123456:AAH...'}
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 disabled:opacity-50"
             />
             <p className="text-[10px] text-muted-foreground mt-1.5">
-              {isMax
-                ? 'Укажите Access Token, выданный платформой MAX'
-                : 'Получите токен у @BotFather в Telegram'}
+              {isViberBot
+                ? 'Токен авторизации из кабинета Viber for Business'
+                : isMax
+                  ? 'Укажите Access Token, выданный платформой MAX'
+                  : 'Получите токен у @BotFather в Telegram'}
             </p>
           </div>
 
+          {isViberBot && (
+            <div>
+              <label className="text-xs font-medium text-foreground mb-1.5 block">
+                Имя бота (sender.name)
+              </label>
+              <input
+                type="text"
+                value={sender}
+                onChange={e => setSender(e.target.value)}
+                placeholder="ARMTEK | ЧАТ-БОТ | BY"
+                className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Имя отправителя, которое увидит получатель.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-medium text-foreground mb-1.5 block">
-              {isMax ? 'Chat ID (user_id для теста)' : 'Chat ID для теста'}
+              {isViberBot ? 'Receiver ID (service_user_id)' : isMax ? 'Chat ID (user_id для теста)' : 'Chat ID для теста'}
             </label>
             <input
               type="text"
               value={chatId}
               onChange={e => setChatId(e.target.value)}
-              placeholder="ID"
+              placeholder={isViberBot ? '+obG7HH+y/Ya8fgjKZUw7w==' : 'ID'}
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
             <p className="text-[10px] text-muted-foreground mt-1.5">
-              Используется только при отправке тестового сообщения.
+              {isViberBot
+                ? 'service_user_id (Base64) подписчика бота — куда отправлять тест.'
+                : 'Используется только при отправке тестового сообщения.'}
             </p>
           </div>
         </div>

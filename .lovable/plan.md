@@ -1,53 +1,113 @@
-## Добавление SMS как отдельного канала (шаблона)
+## Цель
 
-Канал `SMS` становится самостоятельной платформой (как Telegram/MAX/Viber/Email), а не подрежимом Viber. У него простой редактор (только поле SMS), простое превью (SMS-блок), JSON в одно поле `message`. AI-редактор отсутствует. Отображается с пиктограммой монет (платный канал).
+1) UI-доработка хедера каналов (пиктограммы 24ч, размер SMS-иконки).
+2) Полноценная реализация нового канала **Viber Bot** (chatapi.viber.com), отдельно от уже существующего «Viber Business / SMS». Внутреннее переименование.
 
-### 1. Типы и билдеры — `src/lib/message-builder.ts`
-- Расширить `Platform`: `'telegram' | 'max' | 'html' | 'viber' | 'sms'`.
-- Добавить `buildSmsJson(msg)` → `{ message: msg.smsText || msg.text || '' }` (одно поле).
-- Добавить `parseSmsJson(parsed)` → `{ text: '', smsText: parsed.message, mediaType:'none', mediaUrl:'', mediaUrls:[], buttonRows:[] }`.
-- Расширить `buildJson` и `parseJsonToMessage` для `'sms'`.
+---
 
-### 2. Контекст — `src/contexts/MessageContext.tsx`
-- В `defaultParseMode` и в миграции `loadDraft` добавить ветку `sms` → `parseMode: 'Markdown'` (формально, не используется).
+## 1. Хедер каналов (`AppHeader.tsx`)
 
-### 3. Хедер вкладок — `src/components/builder/AppHeader.tsx`
-- Добавить в массив `platforms` запись:
+- Пиктограмма «24h» добавляется к заблокированным кнопкам **Viber** (личный) и **WhatsApp**, означает «окно 24 часа после диалога».
+  - Используем lucide `Clock` + надпись `24h` в маленьком badge (`px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold`), показываем рядом с замком; в Tooltip пишем «Можно отправлять сообщения только в течение 24 часов после последнего сообщения пользователя».
+- Иконка SMS (`SmsIcon`): сейчас рендерится `w-4 h-4`. Поднимаем до `w-5 h-5` (как `ViberBusinessIcon`) и в массиве `platforms` ставим `iconClassName: 'w-5 h-5'`. Цвет оставляем серым.
+
+---
+
+## 2. Переименование текущего «viber» → `viber_business` и добавление `viber_bot`
+
+### `src/lib/message-builder.ts`
+- Тип:
   ```ts
-  { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-4 h-4', paid: true }
+  export type Platform = 'telegram' | 'max' | 'html' | 'viber_business' | 'sms' | 'viber_bot';
   ```
-- Убрать `sms` из списка disabled-каналов внизу.
-- В `Index.tsx` функцию `isPlatform` дополнить `v === 'sms'`.
+- Везде, где было `'viber'`, заменить на `'viber_business'`: `buildJson`, `parseJsonToMessage`, `buildViberJson` (renamed → `buildViberBusinessJson`, оставить алиас экспорта `buildViberJson` для совместимости импорта в `SaveAllTemplatesDialog`, либо обновить импорты).
+- Добавить:
+  ```ts
+  export interface MessageData { ...
+    viberBotSenderName?: string;
+    viberBotTrackingData?: string;
+  }
+  export function buildViberBotJson(msg): object;
+  export function parseViberBotJson(parsed): Partial<MessageData>;
+  ```
+  JSON соответствует образцу (`receiver`, `min_api_version`, `sender.name`, `tracking_data`, `text`, `type`, `media`). Поле `type` определяется из `mediaType`: `none`→`text`, `photo`→`picture`, `video`→`video`, `document`→`file`. Кнопки пока не обрабатываются.
 
-### 4. Редактор — `src/components/builder/EditorPanel.tsx`
-- Добавить флаг `const isSms = message.platform === 'sms'`.
-- Если `isSms`: рендерить ТОЛЬКО секцию SMS-инпута со счётчиком символов (тот же UI, что уже используется в Viber-SMS fallback: textarea + `smsParts()` + tone + ошибка «укажите текст SMS»).
-- Скрыть для `isSms`: маршрут Viber, медиа-секцию, форматтер, основное textarea, AI-кнопку, inline-кнопки.
+### `src/contexts/MessageContext.tsx`
+- `defaultParseMode`: добавить `viber_bot` → `'Markdown'`. Заменить `'viber'` → `'viber_business'` в `loadDraft` и в forced parseMode.
+- Миграция localStorage: при загрузке ключа `omni-builder-draft:viber` (если есть) — перенести в `omni-builder-draft:viber_business` и удалить старый.
 
-### 5. Превью — `src/components/builder/PreviewPanel.tsx`
-- Добавить `const isSms = message.platform === 'sms'`.
-- При `isSms`:
-  - В шапке заголовок «SMS Preview», иконка `MessageSquare` на сером фоне.
-  - Рендерить только тот же SMS-блок, что для Viber-SMS (со счётчиком и кодировкой). Источник текста — `message.smsText`.
-  - Валидация: `emptyTemplate = !message.smsText?.trim()`. Скрыть `mediaInvalid`, кнопки.
-  - `platformLabel = 'SMS'`.
+### `src/pages/Index.tsx`
+- `isPlatform`: добавить `viber_business`, `viber_bot`. Также поддержать обратную совместимость URL-параметра `&channel=viber` → маппинг в `viber_business`; добавить `&channel=viber_bot`.
 
-### 6. Save-All диалог — `src/components/builder/SaveAllTemplatesDialog.tsx`
-- В `PLATFORMS` добавить `{ key: 'sms', label: 'SMS' }`.
-- В `PlatformIcon` добавить ветку для `sms` (та же `SmsIcon` или `MessageSquare` на нейтральном фоне).
-- В `isFilled` для `sms` вернуть `!!(m.smsText?.trim())`.
-- В `buildFor` для `sms` вызвать `buildSmsJson`.
-- Включить `sms: true` в дефолтном `selected` и в загрузке черновиков (`loadDraft('sms')`).
-- Рядом с лейблами платных каналов (Viber Business / SMS, SMS) добавить пиктограмму монет (`<Coins size={12} className="text-amber-500/80" />`).
+### `AppHeader.tsx`
+- В массиве `platforms`: переименовать существующий `id: 'viber'` → `id: 'viber_business'` (label остаётся «Viber Business / SMS»).
+- Заменить заблокированную кнопку `viber-personal` на активную вкладку **Viber** с `id: 'viber_bot'` (CustomIcon = `ViberBrandIcon`, цвет `#7360F2`, paid: true, добавить иконку монет как у других платных). В заблокированных оставляем только WhatsApp с пиктограммой 24h.
 
-### 7. View mode (`?mode=view&channel=sms`)
-- Не требует отдельных правок — `ViewOnlyPage` использует `PreviewPanel`, который уже знает про `sms`. `parseJsonToMessage` распарсит `{message:"..."}` в `smsText`.
+### `EditorPanel.tsx`, `PreviewPanel.tsx`, `JsonPanel.tsx`
+- Заменить везде `message.platform === 'viber'` → `'viber_business'`. Добавить новый признак `isViberBot = message.platform === 'viber_bot'`.
+- В `EditorPanel`:
+  - Для `isViberBot` показываем тот же набор контролов что для `viber_business`, но **без** селектора маршрута и **без SMS-блока**. Медиа-типы: `none / photo / video / document` (без альбома, без кнопок). Форматирование текста — как у Viber Business (bold/italic/strike/mono, parseMode Markdown).
+  - AI-редактор оставляем доступным как для остальных мессенджеров.
+- В `PreviewPanel`:
+  - Для `isViberBot` рендерим обычный «чат-бабл» как у viber_business, без SMS-блока. Лейбл `platformLabel` = «Viber». Аватар: фиолетовый круг с `ViberBrandIcon`. API Method блок: `POST chatapi.viber.com/pa/send_message`, parseMode Markdown.
+- В `JsonPanel`:
+  - Заголовок `JSON (Viber Bot)`. Footer — `Viber REST API • Markdown` / `pa/send_message`. Кнопки **Настройки** и **Тестировать** активны (см. п.5).
 
-### Итоговые файлы
-- `src/lib/message-builder.ts`
-- `src/contexts/MessageContext.tsx`
-- `src/components/builder/AppHeader.tsx`
-- `src/components/builder/EditorPanel.tsx`
-- `src/components/builder/PreviewPanel.tsx`
-- `src/components/builder/SaveAllTemplatesDialog.tsx`
-- `src/pages/Index.tsx`
+### Валидация (PreviewPanel + EditorPanel)
+- Аналог `viber_business` без SMS: `emptyTemplate = textEmpty && !hasValidMedia`. `mediaInvalid` — только проверка `mediaUrl` (альбома нет).
+
+---
+
+## 3. Сохранение коллекции (`SaveAllTemplatesDialog.tsx`)
+
+- Добавить запись в `PLATFORMS`: `{ key: 'viber_bot', label: 'Viber', paid: true }` (со своим `PlatformIcon` — фиолетовый круг + ViberBrandIcon).
+- Переименовать ключи `viber` → `viber_business` во всём файле.
+- `isFilled` для `viber_bot`: `text.trim()` обязателен; если `mediaType !== 'none'` — `mediaUrl.trim()` обязателен.
+- `buildFor` → ветка `viber_bot` использует `buildViberBotJson`.
+- Итоговая коллекция отправляется тем же `POST /api/saveTemplate/?guid=...` — ключ в объекте `collection['viber_bot']`.
+
+---
+
+## 4. View Only mode
+
+`ViewOnlyPage.tsx` ничего менять не нужно — он просто рендерит `PreviewPanel`. Проверим, что `parseJsonToMessage` корректно роутит на `parseViberBotJson` для `platform === 'viber_bot'`.
+
+---
+
+## 5. Модалка настроек и тестирование Viber Bot
+
+### `BotSettingsDialog.tsx`
+- Расширить тип `platform` до `'telegram' | 'max' | 'viber_bot'`.
+- Хранение в `sessionStorage`:
+  - `bot-settings:viber_bot` → token (`X-Viber-Auth-Token`)
+  - `bot-settings:viber_bot:sender` → имя бота
+  - `bot-settings:chatId:viber_bot` → ID получателя
+- Поля формы для viber_bot: **Auth Token**, **Sender name**, **Receiver ID**. Подсказки: «Токен из кабинета Viber for Business», «Имя бота, которое увидит получатель», «service_user_id (Base64) подписчика».
+- Экспортировать вспомогательные геттеры `getViberBotSender(): string | null`.
+
+### `JsonPanel.tsx`
+- `isViberBot` → активируем `Настройки` и `Тестировать` (убрать `disabled` для Viber Bot, оставить блок только для `viber_business` и `sms`).
+- `handleTest` для `viber_bot`:
+  - Берём `token`, `sender`, `receiver` из настроек, валидируем.
+  - Парсим текущий JSON (editMode/generated) → подставляем `receiver` и `sender.name` из настроек поверх значений шаблона.
+  - Вызываем edge function `viber-send` (новая, см. ниже) — прямой `fetch` к `chatapi.viber.com` нельзя из браузера из-за CORS.
+  - Тост успеха/ошибки на основе `status` и `status_message` из ответа Viber.
+
+### Новая edge function `supabase/functions/viber-send/index.ts`
+- Принимает `{ token, payload }`. Делает `POST https://chatapi.viber.com/pa/send_message` с заголовком `X-Viber-Auth-Token` и телом `payload`. Возвращает `{ ok, status, body }`. CORS-заголовки. `verify_jwt = false` в `supabase/config.toml`.
+
+---
+
+## 6. Документация миграции
+
+- Старый ключ localStorage `omni-builder-draft:viber` мигрируется в `:viber_business` при первой загрузке (см. п.2). Старые URL `?channel=viber` маппятся в `viber_business` для обратной совместимости.
+
+---
+
+## Технические детали
+
+- Все строки `'viber'` будут найдены поиском и заменены: `EditorPanel.tsx`, `PreviewPanel.tsx`, `JsonPanel.tsx`, `SaveAllTemplatesDialog.tsx`, `MessageContext.tsx`, `Index.tsx`, `message-builder.ts`, `lib/sms.ts` (если встречается).
+- `buildViberBotJson` минимальный (без кнопок) — ровно по образцу из ТЗ.
+- Модальное окно подтверждения шаблонов уже использует `Coins` для платных каналов — `viber_bot` помечается как `paid: true`, иконка монет появится автоматически.
+- Иконку 24h делаем компактным компонентом, чтобы переиспользовать на WhatsApp и (при необходимости) других каналах в будущем.
+

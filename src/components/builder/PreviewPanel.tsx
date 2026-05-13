@@ -23,7 +23,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const albumUrls = (message.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = message.mediaType === 'album';
   const isHtmlPlatform = message.platform === 'html';
-  const isViberPlatform = message.platform === 'viber';
+  const isViberPlatform = message.platform === 'viber_business';
+  const isViberBotPlatform = message.platform === 'viber_bot';
   const isSmsPlatform = message.platform === 'sms';
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeHasSms = (isViberPlatform && viberRoute.includes('sms')) || isSmsPlatform;
@@ -49,7 +50,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
             : viberRoute === 'viber-only'
               ? textEmpty
               : (textEmpty || smsEmpty))
-        : (textEmpty && !hasValidMedia);
+        : isViberBotPlatform
+          ? (textEmpty && !hasValidMedia)
+          : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
@@ -120,7 +123,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
 
   const isTelegram = message.platform === 'telegram';
   const isHtml = message.platform === 'html';
-  const isViber = message.platform === 'viber';
+  const isViber = message.platform === 'viber_business';
+  const isViberBot = message.platform === 'viber_bot';
   const isSms = message.platform === 'sms';
 
   const handleSaveToProject = async () => {
@@ -157,8 +161,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     }
   };
 
-  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isSms ? 'SMS' : 'MAX';
-  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isSms ? null : maxLogo;
+  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isViberBot ? 'Viber' : isSms ? 'SMS' : 'MAX';
+  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isViberBot || isSms ? null : maxLogo;
 
   return (
     <div className="flex flex-col h-full">
@@ -182,10 +186,11 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
           <>
             <div className="flex items-center gap-2 mb-4">
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
-                isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
+                isTelegram ? 'bg-[hsl(200,80%,50%)]' : (isViber || isViberBot) ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
               }`}>
                 {platformLogo && <img src={platformLogo} alt="" className="w-4 h-4" />}
                 {isViber && <MessageSquare size={14} className="text-white" />}
+                {isViberBot && <span className="text-white text-[11px] font-bold">V</span>}
                 {isSms && <MessageSquare size={14} className="text-muted-foreground" />}
               </div>
               <div>
@@ -343,7 +348,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       : 'sendMessage'
                   : isViber
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
-                    : 'POST /messages'}
+                    : isViberBot
+                      ? 'POST chatapi.viber.com/pa/send_message'
+                      : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
