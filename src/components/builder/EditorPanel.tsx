@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG } from '@/lib/message-builder';
+import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG, VIBER_BTN_BG_PALETTE } from '@/lib/message-builder';
 import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -143,11 +143,23 @@ export default function EditorPanel() {
       rows: viberKb.rows.map(r => r.id === rowId
         ? { ...r, buttons: r.buttons.map(b => {
             if (b.id !== btnId) return b;
-            const next = { ...b, [key]: value } as ViberKbButton;
-            if (key === 'actionType' && value === 'share-phone') next.actionBody = 'phone-reply';
-            return next;
+            return { ...b, [key]: value } as ViberKbButton;
           }) }
         : r),
+    });
+  };
+
+  const insertIntoKbBtnText = (rowId: string, btnId: string, currentText: string, snippet: string) => {
+    const ta = document.getElementById(`viber-btn-text-${btnId}`) as HTMLTextAreaElement | null;
+    const start = ta?.selectionStart ?? currentText.length;
+    const end = ta?.selectionEnd ?? currentText.length;
+    const next = currentText.substring(0, start) + snippet + currentText.substring(end);
+    updateKbButton(rowId, btnId, 'text', next);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      ta.focus();
+      const pos = start + snippet.length;
+      ta.setSelectionRange(pos, pos);
     });
   };
 
