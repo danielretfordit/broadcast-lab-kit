@@ -16,6 +16,7 @@ export default function EditorPanel() {
   const isHtml = message.platform === 'html';
   const isViber = message.platform === 'viber_business';
   const isViberBot = message.platform === 'viber_bot';
+  const isWhatsApp = message.platform === 'whatsapp';
   const isMax = message.platform === 'max';
   const isSms = message.platform === 'sms';
   const isAlbum = message.mediaType === 'album';
@@ -149,16 +150,18 @@ export default function EditorPanel() {
     });
   };
 
-  const insertIntoKbBtnText = (rowId: string, btnId: string, currentText: string, snippet: string) => {
+  const wrapKbBtnText = (rowId: string, btnId: string, currentText: string, open: string, close: string, placeholder = 'текст') => {
     const ta = document.getElementById(`viber-btn-text-${btnId}`) as HTMLTextAreaElement | null;
     const start = ta?.selectionStart ?? currentText.length;
     const end = ta?.selectionEnd ?? currentText.length;
-    const next = currentText.substring(0, start) + snippet + currentText.substring(end);
+    const sel = currentText.substring(start, end) || placeholder;
+    const inserted = open + sel + close;
+    const next = currentText.substring(0, start) + inserted + currentText.substring(end);
     updateKbButton(rowId, btnId, 'text', next);
     requestAnimationFrame(() => {
       if (!ta) return;
       ta.focus();
-      const pos = start + snippet.length;
+      const pos = start + open.length + sel.length;
       ta.setSelectionRange(pos, pos);
     });
   };
@@ -173,13 +176,20 @@ export default function EditorPanel() {
           { id: 'none' as const, icon: null, label: 'Нет' },
           { id: 'photo' as const, icon: Image, label: 'Фото' },
         ]
-      : [
-          { id: 'none' as const, icon: null, label: 'Нет' },
-          { id: 'photo' as const, icon: Image, label: 'Фото' },
-          { id: 'video' as const, icon: Video, label: 'Видео' },
-          { id: 'document' as const, icon: FileText, label: 'Файл' },
-          { id: 'album' as const, icon: Images, label: 'Альбом' },
-        ];
+      : isWhatsApp
+        ? [
+            { id: 'none' as const, icon: null, label: 'Нет' },
+            { id: 'photo' as const, icon: Image, label: 'Фото' },
+            { id: 'video' as const, icon: Video, label: 'Видео' },
+            { id: 'document' as const, icon: FileText, label: 'Файл' },
+          ]
+        : [
+            { id: 'none' as const, icon: null, label: 'Нет' },
+            { id: 'photo' as const, icon: Image, label: 'Фото' },
+            { id: 'video' as const, icon: Video, label: 'Видео' },
+            { id: 'document' as const, icon: FileText, label: 'Файл' },
+            { id: 'album' as const, icon: Images, label: 'Альбом' },
+          ];
 
   const updateAlbumUrl = (idx: number, value: string) => {
     const next = [...albumUrls];
@@ -385,6 +395,20 @@ export default function EditorPanel() {
         </section>
       )}
 
+      {/* WhatsApp: filename input for documents */}
+      {isWhatsApp && message.mediaType === 'document' && (
+        <section>
+          <label className="section-label">Имя файла (для документа)</label>
+          <input
+            type="text"
+            value={message.whatsappFilename || ''}
+            onChange={e => updateField('whatsappFilename', e.target.value)}
+            placeholder="invoice.pdf"
+            className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+          />
+        </section>
+      )}
+
       {/* Body */}
       {showViberContent && (
       <section className="flex flex-col flex-1">
@@ -497,7 +521,7 @@ export default function EditorPanel() {
       )}
 
       {/* Inline buttons */}
-      {!isHtml && showViberContent && !isViberBot && (
+      {!isHtml && showViberContent && !isViberBot && !isWhatsApp && (
         <section>
           <div className="flex items-center justify-between mb-2">
             <label className="section-label !mb-0">
@@ -578,6 +602,113 @@ export default function EditorPanel() {
       )}
 
 
+      {/* WhatsApp interactive: header / footer / reply buttons */}
+      {isWhatsApp && (
+        <>
+          <section>
+            <label className="section-label">Header (опционально, до 60 симв.)</label>
+            <input
+              type="text"
+              maxLength={60}
+              value={message.whatsappHeader || ''}
+              onChange={e => updateField('whatsappHeader', e.target.value)}
+              placeholder="Заголовок сообщения"
+              className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Header / Footer и интерактивные кнопки отображаются, только если есть хотя бы одна Reply-кнопка.
+            </p>
+          </section>
+          <section>
+            <label className="section-label">Footer (опционально, до 60 симв.)</label>
+            <input
+              type="text"
+              maxLength={60}
+              value={message.whatsappFooter || ''}
+              onChange={e => updateField('whatsappFooter', e.target.value)}
+              placeholder="Мелкий текст внизу"
+              className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <label className="section-label !mb-0">Reply кнопки (макс. 3)</label>
+              <button
+                type="button"
+                onClick={() => {
+                  const row = message.buttonRows[0] || { id: generateId(), buttons: [] };
+                  if (row.buttons.length >= 3) return;
+                  const next = {
+                    ...row,
+                    buttons: [...row.buttons, { id: generateId(), text: 'Кнопка', callback_data: `payload_${row.buttons.length + 1}` }],
+                  };
+                  updateField('buttonRows', message.buttonRows.length === 0 ? [next] : [next, ...message.buttonRows.slice(1)]);
+                }}
+                disabled={(message.buttonRows[0]?.buttons.length || 0) >= 3}
+                className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Plus size={12} /> Добавить
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(message.buttonRows[0]?.buttons || []).slice(0, 3).map(btn => (
+                <div key={btn.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <input
+                        type="text"
+                        maxLength={20}
+                        value={btn.text}
+                        onChange={e => {
+                          const row = message.buttonRows[0];
+                          if (!row) return;
+                          updateField('buttonRows', [{
+                            ...row,
+                            buttons: row.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b),
+                          }, ...message.buttonRows.slice(1)]);
+                        }}
+                        placeholder="Title (макс 20 симв.)"
+                        className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                      <input
+                        type="text"
+                        value={btn.callback_data || ''}
+                        onChange={e => {
+                          const row = message.buttonRows[0];
+                          if (!row) return;
+                          updateField('buttonRows', [{
+                            ...row,
+                            buttons: row.buttons.map(b => b.id === btn.id ? { ...b, callback_data: e.target.value } : b),
+                          }, ...message.buttonRows.slice(1)]);
+                        }}
+                        placeholder="payload (например track_order_123)"
+                        className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-xs text-primary font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const row = message.buttonRows[0];
+                        if (!row) return;
+                        const next = { ...row, buttons: row.buttons.filter(b => b.id !== btn.id) };
+                        updateField('buttonRows', next.buttons.length === 0 ? [] : [next, ...message.buttonRows.slice(1)]);
+                      }}
+                      className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Title ≤ 20 символов. Если есть кнопки — Body (текст) обязателен.
+            </p>
+          </section>
+        </>
+      )}
+
       {/* Viber Bot keyboard editor */}
       {isViberBot && (
         <section>
@@ -632,68 +763,19 @@ export default function EditorPanel() {
                     <div key={btn.id} className="rounded-md border border-border/70 bg-muted/30 p-2 space-y-2">
                       <div className="flex items-start gap-2">
                         <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {[
-                              { label: '<b>', snippet: '<b>' },
-                              { label: '</b>', snippet: '</b>' },
-                              { label: '<i>', snippet: '<i>' },
-                              { label: '</i>', snippet: '</i>' },
-                            ].map(t => (
-                              <button
-                                key={t.label}
-                                type="button"
-                                onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, t.snippet); }}
-                                className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-                              >
-                                {t.label}
-                              </button>
-                            ))}
-                            <button
-                              type="button"
-                              title="Белый текст"
-                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, "<font color='#FFFFFF'>"); }}
-                              className="px-1.5 py-0.5 rounded border border-border bg-[#1A2229] text-[10px] font-mono text-white hover:border-primary/40 transition-colors"
-                            >
-                              A⬜
-                            </button>
-                            <button
-                              type="button"
-                              title="Чёрный текст"
-                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, "<font color='#000000'>"); }}
-                              className="px-1.5 py-0.5 rounded border border-border bg-white text-[10px] font-mono text-black hover:border-primary/40 transition-colors"
-                            >
-                              A⬛
-                            </button>
-                            <select
-                              defaultValue=""
-                              onChange={e => {
-                                const v = e.target.value;
-                                if (!v) return;
-                                insertIntoKbBtnText(row.id, btn.id, btn.text, `<font size='${v}'>`);
-                                e.target.value = '';
-                              }}
-                              className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground"
-                              title="Размер текста"
-                            >
-                              <option value="">size…</option>
-                              {[12, 14, 16, 18, 20, 24, 28, 32].map(n => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                            <button
-                              type="button"
-                              title="Закрыть <font>"
-                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, '</font>'); }}
-                              className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-                            >
-                              {'</font>'}
-                            </button>
-                          </div>
+                          <ViberBtnFormatToolbar
+                            onWrap={(o, c, ph) => wrapKbBtnText(row.id, btn.id, btn.text, o, c, ph)}
+                          />
                           <textarea
                             id={`viber-btn-text-${btn.id}`}
                             value={btn.text}
                             onChange={e => updateKbButton(row.id, btn.id, 'text', e.target.value)}
-                            placeholder="Текст (можно <b>…</b>, <i>…</i>, эмодзи)"
+                            placeholder="Текст (выделите часть и примените форматирование)"
                             className="w-full px-2 py-1.5 rounded-md bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y min-h-[44px]"
                           />
+                          <p className="text-[10px] text-muted-foreground">
+                            По умолчанию текст чёрный. Выделите фрагмент и нажмите B / I / «Шрифт» — будет вставлен тег вокруг выделения.
+                          </p>
                         </div>
                         <button
                           type="button"
@@ -864,3 +946,43 @@ export default function EditorPanel() {
     </div>
   );
 }
+
+interface ViberBtnFormatToolbarProps {
+  onWrap: (open: string, close: string, placeholder?: string) => void;
+}
+
+function ViberBtnFormatToolbar({ onWrap }: ViberBtnFormatToolbarProps) {
+  const [color, setColor] = useState<'#000000' | '#FFFFFF'>('#FFFFFF');
+  const [size, setSize] = useState<number>(20);
+  const applyFont = (bold: boolean) => {
+    const open = `<font size='${size}' color='${color}'>${bold ? '<b>' : ''}`;
+    const close = `${bold ? '</b>' : ''}</font>`;
+    onWrap(open, close, 'текст');
+  };
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      <button type="button" title="Жирный <b>"
+        onMouseDown={e => { e.preventDefault(); onWrap('<b>', '</b>', 'текст'); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[11px] font-bold text-foreground hover:border-primary/40 transition-colors">B</button>
+      <button type="button" title="Курсив <i>"
+        onMouseDown={e => { e.preventDefault(); onWrap('<i>', '</i>', 'текст'); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[11px] italic text-foreground hover:border-primary/40 transition-colors">I</button>
+      <span className="mx-1 text-[10px] text-muted-foreground">|</span>
+      <button type="button" title="Чёрный текст" onClick={() => setColor('#000000')}
+        className={`w-6 h-6 rounded-md border bg-black ${color === '#000000' ? 'ring-2 ring-primary ring-offset-1' : 'border-border'}`} />
+      <button type="button" title="Белый текст" onClick={() => setColor('#FFFFFF')}
+        className={`w-6 h-6 rounded-md border bg-white ${color === '#FFFFFF' ? 'ring-2 ring-primary ring-offset-1' : 'border-border'}`} />
+      <select value={size} onChange={e => setSize(Number(e.target.value))}
+        className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-foreground" title="Размер (12–32)">
+        {[12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].map(n => <option key={n} value={n}>{n}px</option>)}
+      </select>
+      <button type="button" title="Применить <font size color>"
+        onMouseDown={e => { e.preventDefault(); applyFont(false); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[10px] font-medium text-foreground hover:border-primary/40 transition-colors">Шрифт</button>
+      <button type="button" title="Применить <font size color><b>"
+        onMouseDown={e => { e.preventDefault(); applyFont(true); }}
+        className="px-2 py-0.5 rounded border border-border bg-card text-[10px] font-bold text-foreground hover:border-primary/40 transition-colors">Шрифт+B</button>
+    </div>
+  );
+}
+

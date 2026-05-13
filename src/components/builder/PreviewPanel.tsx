@@ -9,6 +9,7 @@ import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
 import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
+import WhatsAppBrandIcon from '@/components/icons/WhatsAppBrandIcon';
 
 const TELEGRAM_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg';
 
@@ -26,6 +27,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const isHtmlPlatform = message.platform === 'html';
   const isViberPlatform = message.platform === 'viber_business';
   const isViberBotPlatform = message.platform === 'viber_bot';
+  const isWhatsAppPlatform = message.platform === 'whatsapp';
   const isSmsPlatform = message.platform === 'sms';
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeHasSms = (isViberPlatform && viberRoute.includes('sms')) || isSmsPlatform;
@@ -53,7 +55,17 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               : (textEmpty || smsEmpty))
         : isViberBotPlatform
           ? (textEmpty && !hasValidMedia)
-          : (textEmpty && !hasValidMedia);
+          : isWhatsAppPlatform
+            ? (() => {
+                const buttons = (message.buttonRows[0]?.buttons || []).filter(b => (b.text || '').trim());
+                if (buttons.length > 0) {
+                  if (buttons.length > 3) return true;
+                  return textEmpty;
+                }
+                if (message.mediaType !== 'none') return !message.mediaUrl.trim();
+                return textEmpty;
+              })()
+            : (textEmpty && !hasValidMedia);
   const saveDisabled = mediaInvalid || emptyTemplate;
 
   const renderText = (text: string) => {
@@ -162,8 +174,10 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
     }
   };
 
-  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isViberBot ? 'Viber' : isSms ? 'SMS' : 'MAX';
-  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isViberBot || isSms ? null : maxLogo;
+  const platformLabel = isHtml ? 'HTML' : isTelegram ? 'Telegram' : isViber ? 'Viber Business / SMS' : isViberBot ? 'Viber' : isWhatsAppPlatform ? 'WhatsApp' : isSms ? 'SMS' : 'MAX';
+  const platformLogo = isTelegram ? TELEGRAM_LOGO : isHtml || isViber || isViberBot || isWhatsAppPlatform || isSms ? null : maxLogo;
+  const waButtonsList = (message.buttonRows[0]?.buttons || []).filter(b => (b.text || '').trim()).slice(0, 3);
+  const waHasInteractive = isWhatsAppPlatform && waButtonsList.length > 0;
 
   return (
     <div className="flex flex-col h-full">
@@ -186,8 +200,10 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
         ) : (
           <>
             <div className="flex items-center gap-2 mb-4">
-              {isViberBot ? (
+              {isViberBotPlatform ? (
                 <ViberBrandIcon className="w-8 h-8" style={{ color: '#7360F2' }} />
+              ) : isWhatsAppPlatform ? (
+                <WhatsAppBrandIcon className="w-8 h-8" style={{ color: '#25D366' }} />
               ) : (
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
                   isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
@@ -256,16 +272,35 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               )}
 
               <div className="px-4 py-3 text-sm leading-relaxed text-foreground break-words [overflow-wrap:anywhere]">
+                {isWhatsAppPlatform && waHasInteractive && message.whatsappHeader?.trim() && (
+                  <div className="font-bold text-foreground mb-1">{message.whatsappHeader}</div>
+                )}
                 {renderText(message.text)}
+                {isWhatsAppPlatform && waHasInteractive && message.whatsappFooter?.trim() && (
+                  <div className="text-[11px] text-muted-foreground mt-2">{message.whatsappFooter}</div>
+                )}
                 {!viewOnly && (
                   <div className="text-right mt-2">
                     <span className="text-[10px] text-muted-foreground">15:00 ✓✓</span>
                   </div>
                 )}
               </div>
+              {isWhatsAppPlatform && waHasInteractive && (
+                <div className="border-t border-border bg-card">
+                  {waButtonsList.map(btn => (
+                    <button
+                      key={btn.id}
+                      type="button"
+                      className="w-full py-2.5 text-sm font-medium text-[#25D366] hover:bg-muted/40 border-t border-border first:border-t-0"
+                    >
+                      {btn.text}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {!isAlbum && message.buttonRows.length > 0 && (
+            {!isAlbum && !isWhatsAppPlatform && message.buttonRows.length > 0 && (
               <div className="mt-2 space-y-1.5 max-w-xl">
                 {message.buttonRows.map(row => (
                   <div key={row.id} className="flex gap-1.5">
@@ -360,7 +395,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
                     : isViberBot
                       ? 'POST chatapi.viber.com/pa/send_message'
-                      : 'POST /messages'}
+                      : isWhatsAppPlatform
+                        ? 'POST api.tyntec.com/conversations/v3/messages'
+                        : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
@@ -491,7 +528,6 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
   const sizeCls: Record<string, string> = { small: 'text-[11px]', regular: 'text-xs', large: 'text-sm' };
   const hAlign: Record<string, string> = { left: 'justify-start', center: 'justify-center', right: 'justify-end' };
   const vAlign: Record<string, string> = { top: 'items-start', middle: 'items-center', bottom: 'items-end' };
-  const lightBg = new Set(['#F5F7F9', '#FFFFFF']);
 
   const allButtons = rows.flatMap(row => row.buttons);
 
@@ -511,14 +547,13 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
         const cols = Math.max(1, Math.min(6, b.columns));
         const rs = Math.max(1, Math.min(2, b.rows));
         const bg = b.bgColor || VIBER_BTN_BG;
-        const textColor = lightBg.has(bg) ? '#1A2229' : '#FFFFFF';
         return (
           <div
             key={b.id}
             className={`rounded-md px-2 py-1 flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
             style={{
               backgroundColor: bg,
-              color: textColor,
+              color: '#000000',
               gridColumn: `span ${cols} / span ${cols}`,
               gridRow: `span ${rs} / span ${rs}`,
             }}

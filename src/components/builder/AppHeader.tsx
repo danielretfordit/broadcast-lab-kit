@@ -47,6 +47,7 @@ const platforms: PlatformTab[] = [
   { id: 'viber_business', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
   { id: 'sms', label: 'SMS', CustomIcon: SmsIcon, iconColor: '#6B7280', iconClassName: 'w-5 h-5', paid: true },
   { id: 'viber_bot', label: 'Viber', CustomIcon: ViberBrandIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', dialog24h: true },
+  { id: 'whatsapp', label: 'WhatsApp', CustomIcon: WhatsAppIcon, iconColor: '#25D366', iconClassName: 'w-5 h-5', dialog24h: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
@@ -267,30 +268,6 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
             );
           })}
 
-          {/* Disabled channels with 24h dialog window */}
-          {([
-            { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon },
-          ] as const).map(ch => (
-            <Tooltip key={ch.id}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  disabled
-                  className="relative flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground/50 cursor-not-allowed border border-transparent"
-                >
-                  <ch.Icon className="w-4 h-4" />
-                  {ch.label}
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 text-[9px] font-bold leading-none">
-                    <Clock size={9} /> 24h
-                  </span>
-                  <Lock size={10} className="ml-0.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Окно 24 часа: можно писать только в течение 24 ч после последнего сообщения пользователя. Канал пока недоступен.
-              </TooltipContent>
-            </Tooltip>
-          ))}
         </div>
       )}
     </header>
