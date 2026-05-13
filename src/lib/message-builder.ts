@@ -1,6 +1,6 @@
 import { escapeMarkdownV2Plain, prepareMarkdownV2 } from '@/lib/markdown';
 
-export type Platform = 'telegram' | 'max' | 'html' | 'viber' | 'sms';
+export type Platform = 'telegram' | 'max' | 'html' | 'viber_business' | 'sms' | 'viber_bot';
 
 export interface InlineButton {
   id: string;
@@ -209,9 +209,51 @@ export function parseSmsJson(parsed: Record<string, unknown>): Partial<MessageDa
 export function buildJson(msg: MessageData): object {
   if (msg.platform === 'telegram') return buildTelegramJson(msg);
   if (msg.platform === 'max') return buildMaxJson(msg);
-  if (msg.platform === 'viber') return buildViberJson(msg);
+  if (msg.platform === 'viber_business') return buildViberJson(msg);
+  if (msg.platform === 'viber_bot') return buildViberBotJson(msg);
   if (msg.platform === 'sms') return buildSmsJson(msg);
   return buildEmailJson(msg);
+}
+
+export function buildViberBotJson(msg: MessageData): object {
+  const base: Record<string, unknown> = {
+    receiver: '<service_user_id>',
+    min_api_version: 1,
+    sender: { name: msg.viberBotSenderName || '***' },
+    tracking_data: msg.viberBotTrackingData || 'tracking data',
+    text: msg.text || '',
+  };
+  if (msg.mediaType !== 'none' && msg.mediaUrl) {
+    const typeMap: Record<string, string> = { photo: 'picture', video: 'video', document: 'file' };
+    base.type = typeMap[msg.mediaType] || 'text';
+    base.media = msg.mediaUrl;
+  } else {
+    base.type = 'text';
+  }
+  return base;
+}
+
+export function parseViberBotJson(parsed: Record<string, unknown>): Partial<MessageData> {
+  const result: Partial<MessageData> = {
+    text: typeof parsed.text === 'string' ? parsed.text : '',
+    parseMode: 'Markdown',
+    mediaUrls: [],
+    buttonRows: [],
+    mediaType: 'none',
+    mediaUrl: '',
+  };
+  const sender = parsed.sender as Record<string, unknown> | undefined;
+  if (sender && typeof sender.name === 'string') result.viberBotSenderName = sender.name;
+  if (typeof parsed.tracking_data === 'string') result.viberBotTrackingData = parsed.tracking_data;
+  const type = typeof parsed.type === 'string' ? parsed.type : 'text';
+  const media = typeof parsed.media === 'string' ? parsed.media : '';
+  if (media) {
+    if (type === 'picture') result.mediaType = 'photo';
+    else if (type === 'video') result.mediaType = 'video';
+    else if (type === 'file') result.mediaType = 'document';
+    result.mediaUrl = media;
+  }
+  return result;
 }
 
 /** Determine Telegram API method from message */
@@ -384,7 +426,8 @@ export function parseJsonToMessage(jsonStr: string, platform: Platform): Partial
   const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
   if (platform === 'telegram') return parseTelegramJson(parsed);
   if (platform === 'max') return parseMaxJson(parsed);
-  if (platform === 'viber') return parseViberJson(parsed);
+  if (platform === 'viber_business') return parseViberJson(parsed);
+  if (platform === 'viber_bot') return parseViberBotJson(parsed);
   if (platform === 'sms') return parseSmsJson(parsed);
   return parseEmailJson(parsed);
 }
