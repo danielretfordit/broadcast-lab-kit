@@ -290,7 +290,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               )}
             </div>
 
-            {!isAlbum && message.buttonRows.length > 0 && (
+            {!isAlbum && !isWhatsAppPlatform && message.buttonRows.length > 0 && (
               <div className="mt-2 space-y-1.5 max-w-xl">
                 {message.buttonRows.map(row => (
                   <div key={row.id} className="flex gap-1.5">
