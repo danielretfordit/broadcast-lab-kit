@@ -48,7 +48,7 @@ export default function BotSettingsDialog({ open, onOpenChange, platform }: BotS
     if (open) {
       setToken(getBotToken(platform) || '');
       setChatId(getTestChatId(platform) || '');
-      setSender(getViberBotSender() || '');
+      setSender(getViberBotSender() || (platform === 'viber_bot' ? 'ARMTEK | ЧАТ-БОТ | BY' : ''));
     }
   }, [open, platform]);
 
