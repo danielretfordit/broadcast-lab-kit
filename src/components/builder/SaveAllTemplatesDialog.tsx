@@ -29,6 +29,19 @@ function isFilled(m: MessageData): boolean {
   const hasValidMedia =
     (m.mediaType !== 'none' && m.mediaType !== 'album' && !!m.mediaUrl.trim()) ||
     (isAlbum && albumUrls.length >= 2);
+  if (m.platform === 'viber') {
+    const route = m.viberRoute || 'viber(60)-sms';
+    const textOk = !!m.text.trim();
+    const smsOk = !!(m.smsText && m.smsText.trim());
+    if (route === 'sms-only') return smsOk;
+    // For viber-only and viber(*)-sms validate media if selected
+    const mediaInvalid =
+      (m.mediaType !== 'none' && m.mediaType !== 'album' && !m.mediaUrl.trim()) ||
+      (isAlbum && albumUrls.length < 2);
+    if (mediaInvalid) return false;
+    if (route === 'viber-only') return textOk;
+    return textOk && smsOk;
+  }
   const mediaInvalid =
     m.platform !== 'html' &&
     ((m.mediaType !== 'none' && m.mediaType !== 'album' && !m.mediaUrl.trim()) ||
@@ -36,7 +49,6 @@ function isFilled(m: MessageData): boolean {
   if (mediaInvalid) return false;
   const textEmpty = !m.text.trim();
   if (m.platform === 'html') return !!m.subject.trim() && !textEmpty;
-  if (m.platform === 'viber') return !textEmpty || !!(m.smsText && m.smsText.trim());
   return !textEmpty || hasValidMedia;
 }
 
