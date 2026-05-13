@@ -395,7 +395,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
                     : isViberBot
                       ? 'POST chatapi.viber.com/pa/send_message'
-                      : 'POST /messages'}
+                      : isWhatsAppPlatform
+                        ? 'POST api.tyntec.com/conversations/v3/messages'
+                        : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
