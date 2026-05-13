@@ -602,6 +602,113 @@ export default function EditorPanel() {
       )}
 
 
+      {/* WhatsApp interactive: header / footer / reply buttons */}
+      {isWhatsApp && (
+        <>
+          <section>
+            <label className="section-label">Header (опционально, до 60 симв.)</label>
+            <input
+              type="text"
+              maxLength={60}
+              value={message.whatsappHeader || ''}
+              onChange={e => updateField('whatsappHeader', e.target.value)}
+              placeholder="Заголовок сообщения"
+              className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Header / Footer и интерактивные кнопки отображаются, только если есть хотя бы одна Reply-кнопка.
+            </p>
+          </section>
+          <section>
+            <label className="section-label">Footer (опционально, до 60 симв.)</label>
+            <input
+              type="text"
+              maxLength={60}
+              value={message.whatsappFooter || ''}
+              onChange={e => updateField('whatsappFooter', e.target.value)}
+              placeholder="Мелкий текст внизу"
+              className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+            />
+          </section>
+
+          <section>
+            <div className="flex items-center justify-between mb-2">
+              <label className="section-label !mb-0">Reply кнопки (макс. 3)</label>
+              <button
+                type="button"
+                onClick={() => {
+                  const row = message.buttonRows[0] || { id: generateId(), buttons: [] };
+                  if (row.buttons.length >= 3) return;
+                  const next = {
+                    ...row,
+                    buttons: [...row.buttons, { id: generateId(), text: 'Кнопка', callback_data: `payload_${row.buttons.length + 1}` }],
+                  };
+                  updateField('buttonRows', message.buttonRows.length === 0 ? [next] : [next, ...message.buttonRows.slice(1)]);
+                }}
+                disabled={(message.buttonRows[0]?.buttons.length || 0) >= 3}
+                className="text-xs text-primary hover:text-primary/80 font-semibold flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Plus size={12} /> Добавить
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(message.buttonRows[0]?.buttons || []).slice(0, 3).map(btn => (
+                <div key={btn.id} className="rounded-lg border border-border bg-card p-3 space-y-2 shadow-sm">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 space-y-1.5">
+                      <input
+                        type="text"
+                        maxLength={20}
+                        value={btn.text}
+                        onChange={e => {
+                          const row = message.buttonRows[0];
+                          if (!row) return;
+                          updateField('buttonRows', [{
+                            ...row,
+                            buttons: row.buttons.map(b => b.id === btn.id ? { ...b, text: e.target.value } : b),
+                          }, ...message.buttonRows.slice(1)]);
+                        }}
+                        placeholder="Title (макс 20 симв.)"
+                        className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                      <input
+                        type="text"
+                        value={btn.callback_data || ''}
+                        onChange={e => {
+                          const row = message.buttonRows[0];
+                          if (!row) return;
+                          updateField('buttonRows', [{
+                            ...row,
+                            buttons: row.buttons.map(b => b.id === btn.id ? { ...b, callback_data: e.target.value } : b),
+                          }, ...message.buttonRows.slice(1)]);
+                        }}
+                        placeholder="payload (например track_order_123)"
+                        className="w-full px-2.5 py-1.5 rounded-md bg-muted border border-border text-xs text-primary font-mono placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const row = message.buttonRows[0];
+                        if (!row) return;
+                        const next = { ...row, buttons: row.buttons.filter(b => b.id !== btn.id) };
+                        updateField('buttonRows', next.buttons.length === 0 ? [] : [next, ...message.buttonRows.slice(1)]);
+                      }}
+                      className="mt-2 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              Title ≤ 20 символов. Если есть кнопки — Body (текст) обязателен.
+            </p>
+          </section>
+        </>
+      )}
+
       {/* Viber Bot keyboard editor */}
       {isViberBot && (
         <section>
