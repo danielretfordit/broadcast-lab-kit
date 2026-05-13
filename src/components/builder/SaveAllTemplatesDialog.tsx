@@ -26,7 +26,7 @@ const PLATFORMS: { key: Platform; label: string; paid?: boolean; dialog24h?: boo
   { key: 'viber_bot', label: 'Viber', dialog24h: true },
   { key: 'whatsapp', label: 'WhatsApp', dialog24h: true },
   { key: 'sms', label: 'SMS', paid: true },
-  { key: 'html', label: 'HTML (Email)' },
+  { key: 'html', label: 'Email (HTML)' },
 ];
 
 function isWhatsAppFilled(m: MessageData): boolean {
@@ -104,22 +104,22 @@ function PlatformIcon({ p }: { p: Platform }) {
   }
   if (p === 'viber_business') {
     return (
-      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center text-white">
-        <MessageSquare size={14} />
+      <div className="w-7 h-7 flex items-center justify-center">
+        <ViberBrandIcon className="w-7 h-7" style={{ color: '#7360F2' }} />
       </div>
     );
   }
   if (p === 'viber_bot') {
     return (
-      <div className="w-7 h-7 rounded-full bg-[#7360F2] flex items-center justify-center">
-        <ViberBrandIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+      <div className="w-7 h-7 flex items-center justify-center">
+        <ViberBrandIcon className="w-7 h-7" style={{ color: '#7360F2' }} />
       </div>
     );
   }
   if (p === 'whatsapp') {
     return (
-      <div className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center">
-        <WhatsAppBrandIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
+      <div className="w-7 h-7 flex items-center justify-center">
+        <WhatsAppBrandIcon className="w-6 h-6" style={{ color: '#25D366' }} />
       </div>
     );
   }

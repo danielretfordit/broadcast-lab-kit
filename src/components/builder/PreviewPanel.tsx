@@ -203,9 +203,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               {isViberBotPlatform ? (
                 <ViberBrandIcon className="w-8 h-8" style={{ color: '#7360F2' }} />
               ) : isWhatsAppPlatform ? (
-                <div className="w-7 h-7 rounded-full bg-[#25D366] flex items-center justify-center">
-                  <WhatsAppBrandIcon className="w-4 h-4" style={{ color: '#FFFFFF' }} />
-                </div>
+                <WhatsAppBrandIcon className="w-7 h-7" style={{ color: '#25D366' }} />
               ) : (
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold ${
                   isTelegram ? 'bg-[hsl(200,80%,50%)]' : isViber ? 'bg-[#7360F2]' : isSms ? 'bg-muted' : 'bg-secondary'
@@ -384,26 +382,6 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               );
             })()}
 
-            {!viewOnly && !isSms && (
-              <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
-                <span className="font-semibold">API Method: </span>
-                {message.platform === 'telegram'
-                  ? isAlbum
-                    ? 'sendMediaGroup'
-                    : message.mediaType !== 'none' && message.mediaUrl
-                      ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
-                      : 'sendMessage'
-                  : isViber
-                    ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
-                    : isViberBot
-                      ? 'POST chatapi.viber.com/pa/send_message'
-                      : isWhatsAppPlatform
-                        ? 'POST api.tyntec.com/conversations/v3/messages'
-                        : 'POST /messages'}
-                {' • '}
-                {message.parseMode}
-              </div>
-            )}
           </>
         )}
       </div>

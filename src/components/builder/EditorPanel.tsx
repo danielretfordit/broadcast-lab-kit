@@ -343,6 +343,20 @@ export default function EditorPanel() {
                   Укажите ссылку на {mediaLabel[message.mediaType]}
                 </p>
               )}
+              {isViberBot && message.mediaType === 'photo' && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={message.viberBotThumbnail || ''}
+                    onChange={e => updateField('viberBotThumbnail', e.target.value)}
+                    placeholder="https://example.com/thumb.jpg (превью, опционально)"
+                    className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                  />
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Превью отображается до клика на картинку. Рекомендуется 400×400, до 100 KB.
+                  </p>
+                </div>
+              )}
             </>
           )}
           {isAlbum && (
@@ -607,18 +621,23 @@ export default function EditorPanel() {
       {isWhatsApp && (
         <>
           <section>
-            <label className="section-label">Header (опционально, до 60 симв.)</label>
+            <label className="section-label">Header (опционально, до 20 симв.)</label>
             <input
               type="text"
-              maxLength={60}
+              maxLength={20}
               value={message.whatsappHeader || ''}
               onChange={e => updateField('whatsappHeader', e.target.value)}
               placeholder="Заголовок сообщения"
               className="w-full px-3 py-2 rounded-lg bg-card border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
             />
-            <p className="mt-1 text-[10px] text-muted-foreground">
-              Header / Footer и интерактивные кнопки отображаются, только если есть хотя бы одна Reply-кнопка.
-            </p>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground">
+                Header / Footer и интерактивные кнопки отображаются, только если есть хотя бы одна Reply-кнопка.
+              </p>
+              <span className={`text-[10px] font-mono ${(message.whatsappHeader?.length || 0) > 20 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {(message.whatsappHeader?.length || 0)}/20
+              </span>
+            </div>
           </section>
           <section>
             <label className="section-label">Footer (опционально, до 60 симв.)</label>
