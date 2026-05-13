@@ -16,6 +16,7 @@ export default function EditorPanel() {
   const isHtml = message.platform === 'html';
   const isViber = message.platform === 'viber_business';
   const isViberBot = message.platform === 'viber_bot';
+  const isWhatsApp = message.platform === 'whatsapp';
   const isMax = message.platform === 'max';
   const isSms = message.platform === 'sms';
   const isAlbum = message.mediaType === 'album';
