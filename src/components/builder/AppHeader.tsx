@@ -4,6 +4,7 @@ import { Platform , parseJsonToMessage } from '@/lib/message-builder';
 import { useProjectInfo } from '@/hooks/useProjectInfo';
 import { Info, Code2, Megaphone, Mail, RotateCcw, Lock, Coins, Clock } from 'lucide-react';
 import maxLogo from '@/assets/max-logo.png';
+import ViberBrandIcon from '@/components/icons/ViberBrandIcon';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { useSearchParams } from 'react-router-dom';
