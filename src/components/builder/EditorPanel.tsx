@@ -634,68 +634,19 @@ export default function EditorPanel() {
                     <div key={btn.id} className="rounded-md border border-border/70 bg-muted/30 p-2 space-y-2">
                       <div className="flex items-start gap-2">
                         <div className="flex-1 space-y-1">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {[
-                              { label: '<b>', snippet: '<b>' },
-                              { label: '</b>', snippet: '</b>' },
-                              { label: '<i>', snippet: '<i>' },
-                              { label: '</i>', snippet: '</i>' },
-                            ].map(t => (
-                              <button
-                                key={t.label}
-                                type="button"
-                                onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, t.snippet); }}
-                                className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-                              >
-                                {t.label}
-                              </button>
-                            ))}
-                            <button
-                              type="button"
-                              title="Белый текст"
-                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, "<font color='#FFFFFF'>"); }}
-                              className="px-1.5 py-0.5 rounded border border-border bg-[#1A2229] text-[10px] font-mono text-white hover:border-primary/40 transition-colors"
-                            >
-                              A⬜
-                            </button>
-                            <button
-                              type="button"
-                              title="Чёрный текст"
-                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, "<font color='#000000'>"); }}
-                              className="px-1.5 py-0.5 rounded border border-border bg-white text-[10px] font-mono text-black hover:border-primary/40 transition-colors"
-                            >
-                              A⬛
-                            </button>
-                            <select
-                              defaultValue=""
-                              onChange={e => {
-                                const v = e.target.value;
-                                if (!v) return;
-                                insertIntoKbBtnText(row.id, btn.id, btn.text, `<font size='${v}'>`);
-                                e.target.value = '';
-                              }}
-                              className="px-1 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground"
-                              title="Размер текста"
-                            >
-                              <option value="">size…</option>
-                              {[12, 14, 16, 18, 20, 24, 28, 32].map(n => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                            <button
-                              type="button"
-                              title="Закрыть <font>"
-                              onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, '</font>'); }}
-                              className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-                            >
-                              {'</font>'}
-                            </button>
-                          </div>
+                          <ViberBtnFormatToolbar
+                            onWrap={(o, c, ph) => wrapKbBtnText(row.id, btn.id, btn.text, o, c, ph)}
+                          />
                           <textarea
                             id={`viber-btn-text-${btn.id}`}
                             value={btn.text}
                             onChange={e => updateKbButton(row.id, btn.id, 'text', e.target.value)}
-                            placeholder="Текст (можно <b>…</b>, <i>…</i>, эмодзи)"
+                            placeholder="Текст (выделите часть и примените форматирование)"
                             className="w-full px-2 py-1.5 rounded-md bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y min-h-[44px]"
                           />
+                          <p className="text-[10px] text-muted-foreground">
+                            По умолчанию текст чёрный. Выделите фрагмент и нажмите B / I / «Шрифт» — будет вставлен тег вокруг выделения.
+                          </p>
                         </div>
                         <button
                           type="button"
