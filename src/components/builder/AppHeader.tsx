@@ -19,6 +19,8 @@ type PlatformTab = {
   CustomIcon?: React.FC<{ className?: string }>;
   iconBg?: string;
   iconColor?: string;
+  iconClassName?: string;
+  paid?: boolean;
 };
 
 function ViberBrandIcon({ className }: { className?: string }) {
