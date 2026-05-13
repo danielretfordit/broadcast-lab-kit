@@ -415,7 +415,7 @@ export default function EditorPanel() {
         <section>
           <div className="flex items-center justify-between mb-2">
             <label className="section-label !mb-0">
-              {isViber ? 'Кнопка (одна)' : 'Inline кнопки'}
+              {isViber ? 'Кнопка' : 'Inline кнопки'}
             </label>
             {!isViber && (
               <button
