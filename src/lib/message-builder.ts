@@ -26,6 +26,8 @@ export interface MessageData {
   buttonRows: ButtonRow[];
   smsText?: string;
   viberRoute?: string;
+  viberBotSenderName?: string;
+  viberBotTrackingData?: string;
 }
 
 export function generateId(): string {

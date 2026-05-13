@@ -4,7 +4,8 @@ import { MessageData, createEmptyMessage, Platform } from '@/lib/message-builder
 function defaultParseMode(platform: Platform): MessageData['parseMode'] {
   if (platform === 'html') return 'HTML';
   if (platform === 'max') return 'Markdown';
-  if (platform === 'viber') return 'Markdown';
+  if (platform === 'viber_business') return 'Markdown';
+  if (platform === 'viber_bot') return 'Markdown';
   if (platform === 'sms') return 'Markdown';
   return 'MarkdownV2';
 }
@@ -15,18 +16,26 @@ function storageKey(platform: Platform) {
   return `${STORAGE_PREFIX}${platform}`;
 }
 
+// One-time migration: legacy 'viber' draft → 'viber_business'
+try {
+  const legacy = localStorage.getItem(`${STORAGE_PREFIX}viber`);
+  if (legacy && !localStorage.getItem(`${STORAGE_PREFIX}viber_business`)) {
+    localStorage.setItem(`${STORAGE_PREFIX}viber_business`, legacy);
+  }
+  if (legacy) localStorage.removeItem(`${STORAGE_PREFIX}viber`);
+} catch {}
+
 export function loadDraft(platform: Platform): MessageData {
   try {
     const raw = localStorage.getItem(storageKey(platform));
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Migration: ensure mediaUrls exists
       const merged = { ...createEmptyMessage(), ...parsed, platform };
       if (!Array.isArray(merged.mediaUrls)) merged.mediaUrls = [];
-      // Force correct parseMode per platform (no HTML for messengers)
       if (platform === 'telegram') merged.parseMode = 'MarkdownV2';
       else if (platform === 'max') merged.parseMode = 'Markdown';
-      else if (platform === 'viber') merged.parseMode = 'Markdown';
+      else if (platform === 'viber_business') merged.parseMode = 'Markdown';
+      else if (platform === 'viber_bot') merged.parseMode = 'Markdown';
       else if (platform === 'sms') merged.parseMode = 'Markdown';
       else if (platform === 'html') merged.parseMode = 'HTML';
       return merged;

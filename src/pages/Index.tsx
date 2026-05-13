@@ -13,7 +13,11 @@ import { Platform } from '@/lib/message-builder';
 type BuilderMode = 'marketing' | 'transactional';
 
 function isPlatform(v: string | null): v is Platform {
-  return v === 'telegram' || v === 'max' || v === 'html' || v === 'viber' || v === 'sms';
+  return v === 'telegram' || v === 'max' || v === 'html' || v === 'viber_business' || v === 'viber_bot' || v === 'sms';
+}
+function normalizeChannel(v: string | null): Platform | null {
+  if (v === 'viber') return 'viber_business';
+  return isPlatform(v) ? v : null;
 }
 function isMode(v: string | null): v is BuilderMode {
   return v === 'marketing' || v === 'transactional';
@@ -79,7 +83,7 @@ const Index = () => {
   const channelParam = searchParams.get('channel');
 
   const lockedMode: BuilderMode | null = isMode(typeParam) ? typeParam : null;
-  const lockedChannel: Platform | null = isPlatform(channelParam) ? channelParam : null;
+  const lockedChannel: Platform | null = normalizeChannel(channelParam);
 
   if (mode === 'view') {
     return (
