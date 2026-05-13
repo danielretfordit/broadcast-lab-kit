@@ -322,15 +322,23 @@ export default function EditorPanel() {
 
         {!isHtml && (
           <div className="flex items-center gap-1 mb-2">
-            {[
-              { tag: 'bold', icon: Bold, title: 'Жирный' },
-              { tag: 'italic', icon: Italic, title: 'Курсив' },
-              { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
-              { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
-              { tag: 'link', icon: Link, title: 'Ссылка' },
-              ...(isMax ? [{ tag: 'heading', icon: Heading, title: 'Заголовок' }] : []),
-              { tag: 'quote', icon: Quote, title: 'Цитата' },
-            ].map(({ tag, icon: Icon, title }) => (
+            {(isViber
+              ? [
+                  { tag: 'bold', icon: Bold, title: 'Жирный' },
+                  { tag: 'italic', icon: Italic, title: 'Курсив' },
+                  { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
+                  { tag: 'mono', icon: Code, title: 'Моноширинный' },
+                ]
+              : [
+                  { tag: 'bold', icon: Bold, title: 'Жирный' },
+                  { tag: 'italic', icon: Italic, title: 'Курсив' },
+                  { tag: 'underline', icon: Underline, title: 'Подчёркнутый' },
+                  { tag: 'strikethrough', icon: Strikethrough, title: 'Зачёркнутый' },
+                  { tag: 'link', icon: Link, title: 'Ссылка' },
+                  ...(isMax ? [{ tag: 'heading', icon: Heading, title: 'Заголовок' }] : []),
+                  { tag: 'quote', icon: Quote, title: 'Цитата' },
+                ]
+            ).map(({ tag, icon: Icon, title }) => (
               <button
                 key={tag}
                 type="button"
