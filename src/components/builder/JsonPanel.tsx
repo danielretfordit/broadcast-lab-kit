@@ -21,6 +21,7 @@ export default function JsonPanel() {
   const isTelegram = message.platform === 'telegram';
   const isMax = message.platform === 'max';
   const isViber = message.platform === 'viber';
+  const isSms = message.platform === 'sms';
 
   useEffect(() => {
     if (!editMode) {
@@ -162,7 +163,7 @@ export default function JsonPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : '(MAX)'}
+            JSON {isTelegram ? '(Telegram)' : isViber ? '(Viber/SMS)' : isSms ? '(SMS)' : '(MAX)'}
           </h3>
           <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
             validation.valid
@@ -258,23 +259,25 @@ export default function JsonPanel() {
       )}
 
       {/* Footer info */}
-      <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
-        <span>
-          {isTelegram ? 'Telegram Bot API' : isViber ? 'Viber/SMS Provider' : 'MAX API'} • {message.parseMode}
-        </span>
-        <span>
-          {isTelegram ? getTelegramMethod(message) : isViber ? `route: ${message.viberRoute || 'viber(60)-sms'}` : 'messages/send'}
-        </span>
-      </div>
+      {!isSms && (
+        <div className="px-4 py-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>
+            {isTelegram ? 'Telegram Bot API' : isViber ? 'Viber/SMS Provider' : 'MAX API'} • {message.parseMode}
+          </span>
+          <span>
+            {isTelegram ? getTelegramMethod(message) : isViber ? `route: ${message.viberRoute || 'viber(60)-sms'}` : 'messages/send'}
+          </span>
+        </div>
+      )}
 
       {/* Settings + Test bar (subtle) */}
       <div className="px-3 py-2 border-t border-border bg-muted/30 flex items-center justify-between">
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          disabled={isViber}
+          disabled={isViber || isSms}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-muted-foreground"
-          title={isViber ? 'Недоступно для Viber Business / SMS' : 'Настройки токена бота (только в этой сессии)'}
+          title={isViber || isSms ? 'Недоступно для Viber Business / SMS' : 'Настройки токена бота (только в этой сессии)'}
         >
           <Settings2 size={12} />
           Настройки
@@ -282,9 +285,9 @@ export default function JsonPanel() {
         <button
           type="button"
           onClick={handleTest}
-          disabled={testing || isViber}
+          disabled={testing || isViber || isSms}
           className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title={isViber ? 'Тестовая отправка для Viber/SMS пока недоступна' : 'Отправить тестовое сообщение'}
+          title={isViber || isSms ? 'Тестовая отправка для Viber/SMS пока недоступна' : 'Отправить тестовое сообщение'}
         >
           {testing ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
           {testing ? 'Отправка...' : 'Тестировать'}

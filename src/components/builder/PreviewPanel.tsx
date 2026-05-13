@@ -323,14 +323,16 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                   <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap break-all [overflow-wrap:anywhere] min-h-[48px]">
                     {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
                   </div>
-                  <p className="mt-1.5 text-[10px] text-muted-foreground">
-                    {isSms ? <>кодировка <span className="font-mono">{info.encoding}</span></> : <>Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span></>}
-                  </p>
+                  {!isSms && (
+                    <p className="mt-1.5 text-[10px] text-muted-foreground">
+                      Маршрут: <span className="font-mono">{viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                    </p>
+                  )}
                 </div>
               );
             })()}
 
-            {!viewOnly && (
+            {!viewOnly && !isSms && (
               <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
                 <span className="font-semibold">API Method: </span>
                 {message.platform === 'telegram'
@@ -341,9 +343,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                       : 'sendMessage'
                   : isViber
                     ? `Provider · route: ${(viberRoute === 'viber-only' ? 'viber' : viberRoute === 'sms-only' ? 'sms' : viberRoute)}`
-                    : isSms
-                      ? 'Provider · route: sms'
-                      : 'POST /messages'}
+                    : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
