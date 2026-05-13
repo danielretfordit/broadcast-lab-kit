@@ -4,7 +4,7 @@ import { buildJson, validateJson, extractJsonFromText, parseJsonToMessage, getTe
 import { Copy, Check, AlertCircle, CheckCircle2, Edit3, Eye, Settings2, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import BotSettingsDialog, { getBotToken, getTestChatId } from './BotSettingsDialog';
+import BotSettingsDialog, { getBotToken, getTestChatId, getViberBotSender } from './BotSettingsDialog';
 import { useSearchParams } from 'react-router-dom';
 
 export default function JsonPanel() {
@@ -79,14 +79,47 @@ export default function JsonPanel() {
   };
 
   const handleTest = async () => {
-    if (isViber) {
-      toast.info('Тестовая отправка для Viber/SMS пока недоступна');
+    if (isViber || isSms) {
+      toast.info('Тестовая отправка для этого канала пока недоступна');
       return;
     }
     if (!validation.valid) {
       toast.error('Сначала исправьте ошибки в JSON');
       return;
     }
+
+    if (isViberBot) {
+      const token = getBotToken('viber_bot' as any);
+      const sender = getViberBotSender();
+      const receiver = getTestChatId('viber_bot' as any);
+      if (!token) { toast.error('Сначала укажите Auth Token в настройках'); setSettingsOpen(true); return; }
+      if (!sender) { toast.error('Укажите имя отправителя в настройках'); setSettingsOpen(true); return; }
+      if (!receiver) { toast.error('Укажите Receiver ID (service_user_id) в настройках'); setSettingsOpen(true); return; }
+      const body = editMode ? jsonText : generatedJson;
+      let payload: any;
+      try { payload = JSON.parse(body); } catch { toast.error('Невалидный JSON'); return; }
+      payload.receiver = receiver;
+      payload.sender = { ...(payload.sender || {}), name: sender };
+      if (!payload.min_api_version) payload.min_api_version = 1;
+      setTesting(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('viber-send', { body: { token, payload } });
+        if (error) {
+          toast.error(`Viber: ${error.message}`);
+        } else if (data?.ok && data?.body?.status === 0) {
+          toast.success(`Viber: отправлено • message_token: ${data.body.message_token}`);
+        } else {
+          const msg = data?.body?.status_message || data?.body?.error || `HTTP ${data?.status}`;
+          toast.error(`Viber: ${msg}`);
+        }
+      } catch (e: any) {
+        toast.error(e?.message || 'Ошибка сети');
+      } finally {
+        setTesting(false);
+      }
+      return;
+    }
+
     const platformKeyEarly: 'telegram' | 'max' = isTelegram ? 'telegram' : 'max';
     const testChatId = (getTestChatId(platformKeyEarly) || '').trim();
     if (!testChatId) {
