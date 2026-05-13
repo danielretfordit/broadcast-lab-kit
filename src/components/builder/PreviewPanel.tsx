@@ -491,7 +491,6 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
   const sizeCls: Record<string, string> = { small: 'text-[11px]', regular: 'text-xs', large: 'text-sm' };
   const hAlign: Record<string, string> = { left: 'justify-start', center: 'justify-center', right: 'justify-end' };
   const vAlign: Record<string, string> = { top: 'items-start', middle: 'items-center', bottom: 'items-end' };
-  const lightBg = new Set(['#F5F7F9', '#FFFFFF']);
 
   const allButtons = rows.flatMap(row => row.buttons);
 
@@ -511,14 +510,13 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
         const cols = Math.max(1, Math.min(6, b.columns));
         const rs = Math.max(1, Math.min(2, b.rows));
         const bg = b.bgColor || VIBER_BTN_BG;
-        const textColor = lightBg.has(bg) ? '#1A2229' : '#FFFFFF';
         return (
           <div
             key={b.id}
             className={`rounded-md px-2 py-1 flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
             style={{
               backgroundColor: bg,
-              color: textColor,
+              color: '#000000',
               gridColumn: `span ${cols} / span ${cols}`,
               gridRow: `span ${rs} / span ${rs}`,
             }}
