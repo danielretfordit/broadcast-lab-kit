@@ -50,7 +50,7 @@ function ViberBusinessIcon({ className }: { className?: string }) {
 const platforms: PlatformTab[] = [
   { id: 'telegram', label: 'Telegram', logo: TELEGRAM_LOGO },
   { id: 'max', label: 'MAX', logo: maxLogo },
-  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2' },
+  { id: 'viber', label: 'Viber Business / SMS', CustomIcon: ViberBusinessIcon, iconColor: '#7360F2', iconClassName: 'w-5 h-5', paid: true },
   { id: 'html', label: 'Email', icon: Mail },
 ];
 
