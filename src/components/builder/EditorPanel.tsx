@@ -51,6 +51,7 @@ export default function EditorPanel() {
       else if (tag === 'italic') wrapped = useMaxSyntax ? `*${selected || 'текст'}*` : `_${selected || 'текст'}_`;
       else if (tag === 'underline') wrapped = useMaxSyntax ? `++${selected || 'текст'}++` : `__${selected || 'текст'}__`;
       else if (tag === 'strikethrough') wrapped = `~~${selected || 'текст'}~~`;
+      else if (tag === 'mono') wrapped = '```' + (selected || 'код') + '```';
       else if (tag === 'link') wrapped = `[${selected || 'текст'}](url)`;
     } else {
       if (tag === 'bold') wrapped = `<b>${selected || 'текст'}</b>`;
