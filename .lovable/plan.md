@@ -1,114 +1,74 @@
-## Правки Viber
+## WhatsApp правки
 
-**1) Цвет текста кнопок Viber клавиатуры — по умолчанию чёрный**
-- В `EditorPanel.tsx` мини-тулбар форматирования кнопок: убрать дефолтный `<font color="#FFFFFF">`. Чёрный — без обёртки. При клике "белый цвет" вставляется `<font color='#FFFFFF'>...</font>`, при "чёрный" — снимать обёртку или вставлять `<font color='#000000'>`.
-- В `PreviewPanel.tsx` (`renderViberBtnText`): дефолтный цвет текста — `#000000` если не задан `<font color>`.
+**1) Размер иконки WhatsApp**
+- `src/components/builder/PreviewPanel.tsx` (строка 206): `WhatsAppBrandIcon` `w-8 h-8` → `w-6 h-6`. Чтобы выровнять с круглой плашкой `w-7 h-7` других каналов.
+- `src/components/builder/SaveAllTemplatesDialog.tsx` (строка 116): `WhatsAppBrandIcon` `w-7 h-7` → `w-6 h-6`. Иконка SVG плотнее и выглядит крупнее остальных в круглых плашках.
 
-**2) Переделать структуру форматирования `<font>` в кнопках Viber**
-Правильный формат: `<font size='24' color='#FFFFFF'><b>ТЕКСТ</b></font>` (атрибуты в одинарных кавычках, оба внутри одного тега `<font>`).
-- В `EditorPanel.tsx` тулбар форматирования кнопки изменить так, чтобы был ОДИН блок управления для выделенного фрагмента: галочки/инпуты для color, size, и кнопки B/I, которые оборачивают выделение в `<font size='N' color='#HEX'><b>...</b></font>` единым тегом.
-- Кнопка "Применить форматирование" собирает результат: если задан только bold — `<b>x</b>`, если задан size/color — оборачивает в `<font ...>`. Атрибуты — одинарные кавычки.
-- Парсер в превью (`renderViberBtnText`) уже поддерживает оба варианта (одинарные/двойные кавычки) — проверить и добавить regex для одинарных кавычек если не работает.
+**2) Форматирование текста WhatsApp**
+Стандарт: `*bold*`, `_italic_`, `~strike~`, `` `mono` `` (одинарные символы).
 
-**3) `min_api_version: 4`**
-- В `buildViberBotJson` (`message-builder.ts`) изменить `min_api_version: 1` → `min_api_version: 4`.
-- В `parseViberBotJson` принимать любое значение.
+- `src/contexts/MessageContext.tsx`: в `defaultParseMode` для `'whatsapp'` возвращать `'Markdown'` (сейчас попадает в дефолт `'MarkdownV2'`). Добавить ветку и в `setPlatform`-блоке.
+- `src/components/builder/EditorPanel.tsx` `insertFormatting`:
+  - Добавить флаг `isWhatsAppSyntax = message.platform === 'whatsapp'`.
+  - В ветке Markdown: для WhatsApp — `bold = *x*`, `italic = _x_`, `strikethrough = ~x~`, `mono = ` `` `x` `` `` (одинарные backticks, не тройные). Без `underline`.
+- Тулбар форматирования: для WhatsApp показывать тот же набор, что у Viber (bold/italic/strike/mono), без link/quote/underline.
+- Плашка справа от заголовка "Текст сообщения" (строка 423): для WhatsApp показывать `WhatsApp` (или `Markdown`).
+- `PreviewPanel.tsx` `renderInline`: ветка Markdown для не-MAX уже корректно превращает `*x*→strong`, `_x_→em`, `~x~→s`. Проверить, что регексы не ломают сообщение (после смены parseMode на Markdown сработают). Дополнительно убедиться, что одиночные `` `x` `` рендерятся как `<code>` (уже есть строка 79).
 
----
+**3) Заголовок JSON-панели**
+- `src/components/builder/JsonPanel.tsx` (строка 200): добавить ветку `isWhatsApp` → `'(WhatsApp)'`. Завести `const isWhatsApp = message.platform === 'whatsapp';`.
 
-## Новый раздел WhatsApp (платформа `whatsapp`)
+**4) Footer в JSON-панели**
+- `JsonPanel.tsx` (строка 299, 302): для WhatsApp:
+  - левая часть: `Tyntec API • Markdown`
+  - правая часть (метод/путь): `conversations/v3/messages`
 
-**Разблокировать кнопку платформы WhatsApp** (в `AppHeader.tsx` или там где `disabled` для whatsapp).
+**5) Настройки WhatsApp + тестовая отправка**
 
-**A) Типы и модель данных (`message-builder.ts`)**
-- Добавить `'whatsapp'` в `Platform` union.
-- Новые типы для WhatsApp кнопок reply:
-  ```ts
-  export interface WhatsAppReplyButton { id: string; title: string; payload: string; }
-  export interface WhatsAppInteractive {
-    header: string;     // text
-    body: string;       // text (mandatory)
-    footer: string;     // text
-    buttons: WhatsAppReplyButton[]; // max 3
-  }
-  ```
-- В `MessageData` добавить опциональные `whatsappInteractive?: WhatsAppInteractive`, `whatsappFilename?: string`.
-- Поддерживаемые медиа: `none | photo | video | document` (без album).
+5a) `BotSettingsDialog.tsx`:
+- Расширить `BotPlatform` на `'whatsapp'`.
+- Добавить ключ для sender (`from`): `WA_SENDER_KEY = 'bot-settings:whatsapp:sender'`. Для `whatsapp` хранить отдельно `from` (sender), `to` (chatId) и `apikey` (token).
+- В UI для `whatsapp`:
+  - Поле "API Token (apikey)" — `password`.
+  - Поле "Sender ID (from)" — text. Подсказка: «WABA номер отправителя».
+  - Поле "Receiver ID (to)" — text/password. Подсказка: «Номер получателя в формате E.164 (без +)».
+- Заголовок: `Настройки WhatsApp`.
+- Подсказка для apikey: «Tyntec API key (apikey header)».
+- Экспортировать `getWhatsAppSender()` (читает `WA_SENDER_KEY`).
 
-**B) Build/Parse JSON**
-Добавить `buildWhatsAppJson(msg)` со структурой:
-```
-{ from: "*****", to: "<service_user_id>", channel: "whatsapp", content: { ... } }
-```
-Где `content`:
-- Если есть кнопки (interactive с buttons заполнены и есть body): `contentType: "interactive"`, `interactive: { subType: "buttons", components: { header: {type:"text", text}, body: {type:"text", text}, footer: {type:"text", text}, buttons: [{type:"reply", reply:{payload, title}}] } }`. Header/footer добавляются только если непустые.
-- Иначе если есть фото: `contentType: "image", image: { caption, url }`.
-- Иначе видео: `contentType: "video", video: { caption, url }`.
-- Иначе документ: `contentType: "document", document: { url, caption, filename }`.
-- Иначе: `contentType: "text", text: msg.text`.
+5b) `JsonPanel.tsx`:
+- Кнопка "Настройки" должна быть доступна для WhatsApp: убрать `disabled={isViber || isSms}` для случая whatsapp (оставить только для viber_business / sms).
+- В `<BotSettingsDialog platform={...} />` пробросить `'whatsapp'` когда `isWhatsApp`.
+- В `handleTest`: ветка `if (isWhatsApp)` — собрать payload (`buildWhatsAppJson` уже выдаёт правильную структуру), подменить `from`/`to` на значения из настроек, вызвать edge-функцию `whatsapp-send` через `supabase.functions.invoke('whatsapp-send', { body: { apikey: token, payload } })`. Тосты успеха/ошибки по аналогии с viber.
 
-`parseWhatsAppJson(parsed)` — обратное преобразование.
+5c) Edge function `supabase/functions/whatsapp-send/index.ts`:
+- Принимает `{ apikey, payload }`.
+- POST на `https://api.tyntec.com/conversations/v3/messages`, заголовки `apikey: <token>`, `Content-Type: application/json`, тело — `payload` как есть.
+- Возвращает `{ ok: res.ok, status: res.status, body: <json|text> }` с CORS.
+- Без проверки JWT (`verify_jwt = false` в `supabase/config.toml` блок `[functions.whatsapp-send]`).
+- Зарегистрировать секрет `TYNTEC_API_KEY` НЕ требуется (токен передаётся пользователем из UI).
 
-Включить в `buildJson` и `parseJsonToMessage`.
+**6) Иконки в "Сохранить все шаблоны" одинакового размера**
 
-**C) Форматирование текста (тулбар)**
-В `EditorPanel.tsx` для платформы `whatsapp`:
-- Bold: `*текст*`
-- Italic: `_текст_`
-- Strikethrough: `~текст~`
-- Code: `` `текст` `` (одинарные backticks для inline; для блоков — три)
-Использовать `parseMode = 'Markdown'` (или новый режим `'WhatsApp'` — но Markdown с правильными wrappers достаточно: добавить ветку `isWhatsApp` в `insertFormatting`).
-
-**D) Редактор (как Viber bot, но проще)**
-- Один URL картинки/видео/документа (без album).
-- Поле "Имя файла" (filename) для documents.
-- Текст (caption или text). Для interactive это `body`.
-- Поля `Header text` (опционально, до 60 chars), `Footer text` (опционально, до 60 chars) — отображаются только когда добавлены кнопки.
-- Список reply-кнопок (max 3): редактор `title` (до 20 chars), `payload`.
-- Если кнопки добавлены — медиа недоступно (WhatsApp interactive buttons не поддерживают медиа в том же сообщении в этой структуре). Уточнение: header может быть только text, поэтому при наличии interactive buttons — медиа выключаем.
-
-**E) Превью и list-view (`PreviewPanel.tsx`, `SaveAllTemplatesDialog.tsx`)**
-- Иконка WhatsApp: классический зелёный логотип. Создать `src/components/icons/WhatsAppBrandIcon.tsx` (зелёный `#25D366`) — простой SVG в стиле Viber-иконки.
-- Превью оформить как Viber (bot): пузырь сообщения с медиа сверху, текстом, и кнопками снизу.
-- Если interactive buttons: рендер шапка (жирным), body, footer (мелкий серый), затем 3 кнопки-стека (как WhatsApp UI).
-- Поддержать markdown WhatsApp: `*bold*`, `_italic_`, `~strike~`, `` `code` `` → HTML. Простая функция `renderWhatsAppText`.
-
-**F) Валидация**
-- body обязательный (для interactive — body mandatory).
-- title кнопки ≤ 20 chars, header/footer ≤ 60 chars.
-- Не более 3 кнопок.
-- Если медиа выбрано — url обязателен.
-- Predicate `isWhatsAppValid(msg)` для блокировки сохранения/отправки, как у других каналов.
-
-**G) Save All Templates (`SaveAllTemplatesDialog.tsx`)**
-- Добавить запись для канала WhatsApp по аналогии с Viber bot: иконка, плашка `24` (как Telegram/WhatsApp 24h окно), JSON.
-
-**H) Отправка (Send/Test)**
-- Реализовать как остальные мессенджеры. Создать edge function `whatsapp-send` (по образцу `viber-send/index.ts`). Endpoint: `https://api.tyntec.com/conversations/v3/messages`. Headers: `apikey: <TYNTEC_API_KEY>`, `Content-Type: application/json`. Body — JSON из `buildWhatsAppJson` с подстановкой реальных `from`/`to`.
-- Секрет `TYNTEC_API_KEY` запросить через `secrets--add_secret`.
-
-**I) Модальное окно настройки и тестирования WhatsApp**
-По аналогии с Viber bot Settings (`BotSettingsDialog.tsx`):
-- Поля: API Token (apikey), Sender ID (from), Receiver ID (to) — для тестирования.
-- Кнопка "Тест": вызывает edge function `whatsapp-send` с текущим JSON.
-- Подсказка Receiver ID — обезличенная (как у Viber bot), без реальных ID.
-- Сохранять настройки в localStorage.
+В `SaveAllTemplatesDialog.tsx` `PlatformIcon`:
+- Все плашки имеют контейнер `w-7 h-7` круглый. Внутри — иконка ~`w-4 h-4`.
+- Сейчас `viber_bot` рендерит `ViberBrandIcon className="w-7 h-7"` — без круглой подложки, иконка визуально крупнее.
+- WhatsApp — то же.
+- Сделать унифицированно: обернуть `ViberBrandIcon` и `WhatsAppBrandIcon` в `<div className="w-7 h-7 rounded-full bg-[colorBg]/15 flex items-center justify-center">` и иконка внутри `w-4 h-4` цветом бренда. Либо проще: задать всем брендовым SVG `w-4 h-4` в круглой подложке как у Telegram/MAX (фон в фирменном цвете светлый/насыщенный — для единообразия использовать насыщенный, чтобы белые/контурные SVG читались, либо оставить контурные с легким фоном).
+- Решение: круглый контейнер 7×7 с фоном `#7360F2` (Viber) / `#25D366` (WhatsApp), внутри иконка `w-4 h-4` цветом `white`. Это совпадает по визуалу с Telegram/MAX.
 
 ---
 
 ## Файлы
 
-**Изменить:**
-- `src/lib/message-builder.ts` — типы, build/parse WhatsApp, `min_api_version: 4`.
-- `src/components/builder/EditorPanel.tsx` — Viber `<font>` тулбар, WhatsApp редактор, форматирование.
-- `src/components/builder/PreviewPanel.tsx` — дефолтный чёрный цвет текста кнопок Viber, WhatsApp превью + иконка, рендер markdown.
-- `src/components/builder/SaveAllTemplatesDialog.tsx` — добавить WhatsApp.
-- `src/components/builder/AppHeader.tsx` — разблокировать WhatsApp.
-- `src/components/builder/BotSettingsDialog.tsx` или новый `WhatsAppSettingsDialog.tsx` — настройки/тест.
-- `src/contexts/MessageContext.tsx` — initial state для whatsapp полей.
+Изменить:
+- `src/components/builder/PreviewPanel.tsx` — размер иконки WhatsApp.
+- `src/components/builder/SaveAllTemplatesDialog.tsx` — единые иконки 7×7 в круге.
+- `src/components/builder/JsonPanel.tsx` — заголовок "(WhatsApp)", footer Tyntec API, ветка `handleTest` для WhatsApp, прокинуть platform в settings.
+- `src/components/builder/BotSettingsDialog.tsx` — поддержка `whatsapp` (apikey + from + to), экспорт `getWhatsAppSender`.
+- `src/components/builder/EditorPanel.tsx` — `insertFormatting` для WhatsApp, тулбар (bold/italic/strike/mono), плашка parse-mode.
+- `src/contexts/MessageContext.tsx` — `defaultParseMode('whatsapp') = 'Markdown'`.
+- `supabase/config.toml` — блок `[functions.whatsapp-send] verify_jwt = false`.
 
-**Создать:**
-- `src/components/icons/WhatsAppBrandIcon.tsx`.
-- `supabase/functions/whatsapp-send/index.ts`.
-
-**Секреты:** `TYNTEC_API_KEY`.
+Создать:
+- `supabase/functions/whatsapp-send/index.ts` — proxy к `https://api.tyntec.com/conversations/v3/messages`.
