@@ -255,7 +255,7 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
 
           {/* Disabled channels */}
           {([
-            { id: 'viber-personal', label: 'Viber', Icon: ViberIcon, paid: false },
+            { id: 'viber-personal', label: 'Viber', Icon: ViberBrandIcon, paid: false },
             { id: 'whatsapp', label: 'WhatsApp', Icon: WhatsAppIcon, paid: false },
           ] as const).map(ch => (
             <Tooltip key={ch.id}>
