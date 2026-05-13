@@ -285,6 +285,34 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             )}
 
+            {isViber && (() => {
+              const info = smsParts(message.smsText || '');
+              const tone =
+                info.parts === 0 ? 'text-muted-foreground'
+                : info.parts <= 1 ? 'text-success'
+                : info.parts <= 3 ? 'text-warning'
+                : 'text-destructive';
+              return (
+                <div className="mt-4 max-w-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                      <MessageSquare size={12} className="text-muted-foreground" />
+                    </div>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">SMS-фолбэк</p>
+                    <span className={`ml-auto text-[11px] font-semibold ${tone}`}>
+                      {info.len} симв. • {info.parts} SMS
+                    </span>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground font-mono whitespace-pre-wrap min-h-[48px]">
+                    {message.smsText || <span className="text-muted-foreground italic font-sans">Текст SMS не указан</span>}
+                  </div>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    Маршрут: <span className="font-mono">{message.viberRoute || 'viber(60)-sms'}</span> · кодировка <span className="font-mono">{info.encoding}</span>
+                  </p>
+                </div>
+              );
+            })()}
+
             {!viewOnly && (
               <div className="mt-6 px-3 py-2 rounded-lg bg-muted text-[11px] text-muted-foreground max-w-xl">
                 <span className="font-semibold">API Method: </span>
@@ -294,7 +322,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                     : message.mediaType !== 'none' && message.mediaUrl
                       ? `send${message.mediaType.charAt(0).toUpperCase()}${message.mediaType.slice(1)}`
                       : 'sendMessage'
-                  : 'POST /messages'}
+                  : isViber
+                    ? `Provider · route: ${message.viberRoute || 'viber(60)-sms'}`
+                    : 'POST /messages'}
                 {' • '}
                 {message.parseMode}
               </div>
