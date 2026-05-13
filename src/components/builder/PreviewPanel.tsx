@@ -188,7 +188,7 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               </div>
             </div>
 
-            {(!isViber || routeHasViber) && (
+            {(!isViber || routeHasViber) && (<>
             <div className="rounded-xl border border-border bg-card shadow-sm max-w-xl">
 
               {isAlbum && albumUrls.length > 0 && (
