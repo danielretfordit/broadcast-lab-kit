@@ -421,14 +421,14 @@ export default function EditorPanel() {
           </label>
           {!isHtml && (
             <span className="text-[10px] px-2 py-1 rounded bg-muted border border-border text-muted-foreground">
-              {message.platform === 'telegram' ? 'MarkdownV2' : 'Markdown'}
+              {message.platform === 'telegram' ? 'MarkdownV2' : isWhatsApp ? 'WhatsApp' : 'Markdown'}
             </span>
           )}
         </div>
 
         {!isHtml && (
           <div className="flex items-center gap-1 mb-2">
-            {((isViber || isViberBot)
+            {((isViber || isViberBot || isWhatsApp)
               ? [
                   { tag: 'bold', icon: Bold, title: 'Жирный' },
                   { tag: 'italic', icon: Italic, title: 'Курсив' },
