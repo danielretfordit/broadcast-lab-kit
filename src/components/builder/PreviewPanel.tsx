@@ -467,26 +467,28 @@ function ViberKeyboardPreview({ rows }: { rows: { id: string; buttons: ViberKbBu
   const sizeCls: Record<string, string> = { small: 'text-[11px]', regular: 'text-xs', large: 'text-sm' };
   const hAlign: Record<string, string> = { left: 'justify-start', center: 'justify-center', right: 'justify-end' };
   const vAlign: Record<string, string> = { top: 'items-start', middle: 'items-center', bottom: 'items-end' };
-  const actionIcon: Record<string, string> = { 'open-url': '🔗', 'share-phone': '📞', 'location-picker': '📍', 'reply': '' };
+  const lightBg = new Set(['#F5F7F9', '#FFFFFF']);
 
   return (
     <div className="rounded-lg p-1.5 grid grid-cols-6 gap-1 border border-border" style={{ backgroundColor: VIBER_KB_BG }}>
       {rows.flatMap(row => row.buttons).map(b => {
-        const icon = actionIcon[b.actionType] || '';
         const cols = Math.max(1, Math.min(6, b.columns));
         const rs = Math.max(1, Math.min(2, b.rows));
+        const bg = b.bgColor || VIBER_BTN_BG;
+        const textColor = lightBg.has(bg) ? '#1A2229' : '#FFFFFF';
         return (
           <div
             key={b.id}
-            className={`rounded-md px-2 py-2 text-white flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
+            className={`rounded-md px-2 py-2 flex ${hAlign[b.textHAlign]} ${vAlign[b.textVAlign]} ${sizeCls[b.textSize]} font-medium overflow-hidden`}
             style={{
-              backgroundColor: VIBER_BTN_BG,
+              backgroundColor: bg,
+              color: textColor,
               gridColumn: `span ${cols} / span ${cols}`,
               minHeight: `${rs * 36}px`,
             }}
             title={b.actionType === 'open-url' ? b.actionBody : undefined}
           >
-            <span className="text-center leading-tight" dangerouslySetInnerHTML={{ __html: (icon ? icon + ' ' : '') + renderViberBtnText(b.text || '') }} />
+            <span className="text-center leading-tight" dangerouslySetInnerHTML={{ __html: renderViberBtnText(b.text || '') }} />
           </div>
         );
       })}

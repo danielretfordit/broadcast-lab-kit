@@ -14,18 +14,22 @@ export function useProjectInfo(): ProjectInfo {
 
   const guid = searchParams.get('guid');
 
-  const getHttpJson = async () => {  
+  const getHttpJson = async () => {
+    if (!guid || guid === 'null') return;
     try {
       const response = await fetch(`/api/getTemplate?guid=${guid}`);
-      const data = await response.json();
+      if (!response.ok) return;
+      const text = await response.text();
+      if (!text) return;
+      const data = JSON.parse(text);
       setHttpData(data);
     } catch (error) {
-      console.error('Error fetching template:', error);
+      console.warn('getTemplate failed:', error);
     }
   };
 
   useEffect(() => {
-    getHttpJson();
+    getHttpJson().catch(() => {});
   }, []);
 
   return useMemo(() => {

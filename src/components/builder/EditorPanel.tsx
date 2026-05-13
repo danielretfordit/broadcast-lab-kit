@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG } from '@/lib/message-builder';
+import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG, VIBER_BTN_BG_PALETTE } from '@/lib/message-builder';
 import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -143,11 +143,23 @@ export default function EditorPanel() {
       rows: viberKb.rows.map(r => r.id === rowId
         ? { ...r, buttons: r.buttons.map(b => {
             if (b.id !== btnId) return b;
-            const next = { ...b, [key]: value } as ViberKbButton;
-            if (key === 'actionType' && value === 'share-phone') next.actionBody = 'phone-reply';
-            return next;
+            return { ...b, [key]: value } as ViberKbButton;
           }) }
         : r),
+    });
+  };
+
+  const insertIntoKbBtnText = (rowId: string, btnId: string, currentText: string, snippet: string) => {
+    const ta = document.getElementById(`viber-btn-text-${btnId}`) as HTMLTextAreaElement | null;
+    const start = ta?.selectionStart ?? currentText.length;
+    const end = ta?.selectionEnd ?? currentText.length;
+    const next = currentText.substring(0, start) + snippet + currentText.substring(end);
+    updateKbButton(rowId, btnId, 'text', next);
+    requestAnimationFrame(() => {
+      if (!ta) return;
+      ta.focus();
+      const pos = start + snippet.length;
+      ta.setSelectionRange(pos, pos);
     });
   };
 
@@ -616,12 +628,33 @@ export default function EditorPanel() {
                   {row.buttons.map(btn => (
                     <div key={btn.id} className="rounded-md border border-border/70 bg-muted/30 p-2 space-y-2">
                       <div className="flex items-start gap-2">
-                        <textarea
-                          value={btn.text}
-                          onChange={e => updateKbButton(row.id, btn.id, 'text', e.target.value)}
-                          placeholder="Текст (можно <b>, <i>, <u>, эмодзи)"
-                          className="flex-1 px-2 py-1.5 rounded-md bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y min-h-[44px]"
-                        />
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-1">
+                            {[
+                              { label: '<b>', snippet: '<b>' },
+                              { label: '</b>', snippet: '</b>' },
+                              { label: '<i>', snippet: '<i>' },
+                              { label: '</i>', snippet: '</i>' },
+                            ].map(t => (
+                              <button
+                                key={t.label}
+                                type="button"
+                                onMouseDown={e => { e.preventDefault(); insertIntoKbBtnText(row.id, btn.id, btn.text, t.snippet); }}
+                                className="px-1.5 py-0.5 rounded border border-border bg-card text-[10px] font-mono text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                              >
+                                {t.label}
+                              </button>
+                            ))}
+                            <span className="text-[10px] text-muted-foreground ml-1">форматирование</span>
+                          </div>
+                          <textarea
+                            id={`viber-btn-text-${btn.id}`}
+                            value={btn.text}
+                            onChange={e => updateKbButton(row.id, btn.id, 'text', e.target.value)}
+                            placeholder="Текст (можно <b>…</b>, <i>…</i>, эмодзи)"
+                            className="w-full px-2 py-1.5 rounded-md bg-card border border-border text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y min-h-[44px]"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeKbButton(row.id, btn.id)}
@@ -630,6 +663,24 @@ export default function EditorPanel() {
                         >
                           <X size={14} />
                         </button>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block mb-1">Цвет фона кнопки</span>
+                        <div className="flex items-center gap-1.5">
+                          {VIBER_BTN_BG_PALETTE.map(c => {
+                            const active = (btn.bgColor || VIBER_BTN_BG) === c;
+                            return (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => updateKbButton(row.id, btn.id, 'bgColor', c)}
+                                title={c}
+                                className={`w-6 h-6 rounded-md border ${active ? 'ring-2 ring-primary ring-offset-1' : 'border-border'} transition-all`}
+                                style={{ backgroundColor: c }}
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <label className="text-[10px] text-muted-foreground">
@@ -641,19 +692,16 @@ export default function EditorPanel() {
                           >
                             <option value="reply">Ответ</option>
                             <option value="open-url">Открыть URL</option>
-                            <option value="share-phone">Поделиться телефоном</option>
-                            <option value="location-picker">Геолокация</option>
                           </select>
                         </label>
                         <label className="text-[10px] text-muted-foreground">
-                          {btn.actionType === 'open-url' ? 'URL' : btn.actionType === 'share-phone' ? 'Action body (auto)' : 'Payload / body'}
+                          {btn.actionType === 'open-url' ? 'URL' : 'Payload / body'}
                           <input
                             type="text"
                             value={btn.actionBody}
-                            disabled={btn.actionType === 'share-phone'}
                             onChange={e => updateKbButton(row.id, btn.id, 'actionBody', e.target.value)}
-                            placeholder={btn.actionType === 'open-url' ? 'https://...' : btn.actionType === 'share-phone' ? 'phone-reply' : 'reply'}
-                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground font-mono disabled:opacity-60"
+                            placeholder={btn.actionType === 'open-url' ? 'https://...' : 'reply'}
+                            className="mt-0.5 w-full px-2 py-1 rounded-md bg-card border border-border text-xs text-foreground font-mono"
                           />
                         </label>
                       </div>

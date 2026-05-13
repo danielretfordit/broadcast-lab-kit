@@ -14,7 +14,7 @@ export interface ButtonRow {
   buttons: InlineButton[];
 }
 
-export type ViberKbActionType = 'reply' | 'open-url' | 'share-phone' | 'location-picker';
+export type ViberKbActionType = 'reply' | 'open-url';
 export type ViberKbTextSize = 'small' | 'regular' | 'large';
 export type ViberKbAlignH = 'left' | 'center' | 'right';
 export type ViberKbAlignV = 'top' | 'middle' | 'bottom';
@@ -29,6 +29,7 @@ export interface ViberKbButton {
   textSize: ViberKbTextSize;
   textHAlign: ViberKbAlignH;
   textVAlign: ViberKbAlignV;
+  bgColor?: string;
 }
 
 export interface ViberKbRow {
@@ -57,8 +58,9 @@ export interface MessageData {
   viberKeyboard?: ViberKeyboard;
 }
 
-export const VIBER_BTN_BG = '#ffa000';
+export const VIBER_BTN_BG = '#FF7300';
 export const VIBER_KB_BG = '#ffffff';
+export const VIBER_BTN_BG_PALETTE = ['#FF7300', '#1A2229', '#343F49', '#F5F7F9', '#FFFFFF', '#0054A6'] as const;
 
 export function createEmptyViberButton(): ViberKbButton {
   return {
@@ -71,6 +73,7 @@ export function createEmptyViberButton(): ViberKbButton {
     textSize: 'regular',
     textHAlign: 'center',
     textVAlign: 'middle',
+    bgColor: '#FF7300',
   };
 }
 
@@ -272,14 +275,14 @@ function buildViberKeyboard(kb?: ViberKeyboard): Record<string, unknown> | null 
       const actionMap: Record<ViberKbActionType, string> = {
         'reply': 'reply',
         'open-url': 'open-url',
-        'share-phone': 'share-phone',
-        'location-picker': 'location-picker',
       };
+      const at: ViberKbActionType = b.actionType === 'open-url' ? 'open-url' : 'reply';
+      const bg = b.bgColor && (VIBER_BTN_BG_PALETTE as readonly string[]).includes(b.bgColor) ? b.bgColor : VIBER_BTN_BG;
       buttons.push({
         Columns: Math.max(1, Math.min(6, b.columns || 6)),
         Rows: Math.max(1, Math.min(2, b.rows || 1)),
-        BgColor: VIBER_BTN_BG,
-        ActionType: actionMap[b.actionType],
+        BgColor: bg,
+        ActionType: actionMap[at],
         ActionBody: b.actionBody || '',
         Text: b.text || '',
         TextSize: sizeMap[b.textSize],
@@ -348,20 +351,24 @@ export function parseViberBotJson(parsed: Record<string, unknown>): Partial<Mess
         curRow = { id: generateId(), buttons: [] };
         cols = 0;
       }
-      const at = String(b.ActionType || 'reply') as ViberKbActionType;
+      const atRaw = String(b.ActionType || 'reply');
+      const at: ViberKbActionType = atRaw === 'open-url' ? 'open-url' : 'reply';
       const ts = String(b.TextSize || 'regular') as ViberKbTextSize;
       const ha = String(b.TextHAlign || 'center') as ViberKbAlignH;
       const va = String(b.TextVAlign || 'middle') as ViberKbAlignV;
+      const bgRaw = typeof b.BgColor === 'string' ? b.BgColor : '';
+      const bg = (VIBER_BTN_BG_PALETTE as readonly string[]).includes(bgRaw) ? bgRaw : VIBER_BTN_BG;
       curRow.buttons.push({
         id: generateId(),
         text: typeof b.Text === 'string' ? b.Text : '',
         columns: c,
         rows: Math.max(1, Math.min(2, Number(b.Rows) || 1)),
-        actionType: ['reply', 'open-url', 'share-phone', 'location-picker'].includes(at) ? at : 'reply',
+        actionType: at,
         actionBody: typeof b.ActionBody === 'string' ? b.ActionBody : '',
         textSize: ['small', 'regular', 'large'].includes(ts) ? ts : 'regular',
         textHAlign: ['left', 'center', 'right'].includes(ha) ? ha : 'center',
         textVAlign: ['top', 'middle', 'bottom'].includes(va) ? va : 'middle',
+        bgColor: bg,
       });
       cols += c;
     }
