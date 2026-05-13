@@ -82,16 +82,23 @@ export default function AppHeader({ builderMode, onBuilderModeChange, lockedMode
 
   const getHttpJson = async () => {
     const guid = searchParams.get('guid');
-    fetch(`/api/getTemplate?guid=${guid}`)
-      .then(res => res.json())
-      .then(data => {
-        const updates = parseJsonToMessage(data.json, message.platform);
-        setMessage(prev => ({ ...prev, ...updates }));
-      })
-  }
+    if (!guid || guid === 'null') return;
+    try {
+      const res = await fetch(`/api/getTemplate?guid=${guid}`);
+      if (!res.ok) return;
+      const text = await res.text();
+      if (!text) return;
+      const data = JSON.parse(text);
+      if (!data || !data.json) return;
+      const updates = parseJsonToMessage(data.json, message.platform);
+      setMessage(prev => ({ ...prev, ...updates }));
+    } catch (e) {
+      console.warn('getTemplate failed:', e);
+    }
+  };
 
   useEffect(() => {
-    getHttpJson();
+    getHttpJson().catch(() => {});
   }, []);
 
   const handleHardReset = () => {
