@@ -78,6 +78,9 @@ function isFilled(m: MessageData): boolean {
     const limit = m.mediaType === 'none' ? 4096 : 1024;
     if ([...(m.text || '')].length > limit) return false;
   }
+  if (m.platform === 'max') {
+    if ([...(m.text || '')].length > 4000) return false;
+  }
   return !textEmpty || hasValidMedia;
 }
 
