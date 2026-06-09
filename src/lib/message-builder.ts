@@ -716,6 +716,15 @@ export function isTelegramTextValid(m: { platform: string; mediaType: string; te
   return telegramTextLength(m) <= telegramTextLimit(m);
 }
 
+export const MAX_TEXT_LIMIT = 4000;
+export function maxTextLength(m: { text?: string }): number {
+  return [...(m.text || '')].length;
+}
+export function isMaxTextValid(m: { platform: string; text?: string }): boolean {
+  if (m.platform !== 'max') return true;
+  return maxTextLength(m) <= MAX_TEXT_LIMIT;
+}
+
 export function extractJsonFromText(text: string): string {
   let cleaned = text
     .replace(/```json\s*/gi, '')
