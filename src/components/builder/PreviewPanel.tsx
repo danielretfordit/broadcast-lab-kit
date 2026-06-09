@@ -66,7 +66,10 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
                 return textEmpty;
               })()
             : (textEmpty && !hasValidMedia);
-  const saveDisabled = mediaInvalid || emptyTemplate;
+  const tgLimit = message.platform === 'telegram' ? (message.mediaType === 'none' ? 4096 : 1024) : 0;
+  const tgLen = message.platform === 'telegram' ? [...(message.text || '')].length : 0;
+  const tgOverLimit = message.platform === 'telegram' && tgLen > tgLimit;
+  const saveDisabled = mediaInvalid || emptyTemplate || tgOverLimit;
 
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
