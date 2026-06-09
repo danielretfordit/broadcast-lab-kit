@@ -397,7 +397,9 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               ? 'Заполните шаблон для сохранения'
               : mediaInvalid
                 ? 'Заполните медиа для сохранения'
-                : 'Сохранить в проект';
+                : tgOverLimit
+                  ? `Превышен лимит Telegram: ${tgLen}/${tgLimit}`
+                  : 'Сохранить в проект';
             return (
               <div className="flex items-center gap-2">
                 <button
