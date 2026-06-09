@@ -494,7 +494,8 @@ export default function EditorPanel() {
                   : '<b>Жирный</b> <i>курсив</i> <u>подчёркнутый</u>\n<blockquote>Цитата</blockquote>'
             }
             className={`w-full px-3 py-3 rounded-lg bg-card border text-sm text-foreground font-mono leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 resize-y min-h-[180px] ${
-              message.platform === 'telegram' && [...(message.text || '')].length > (message.mediaType === 'none' ? 4096 : 1024)
+              (message.platform === 'telegram' && [...(message.text || '')].length > (message.mediaType === 'none' ? 4096 : 1024)) ||
+              (message.platform === 'max' && [...(message.text || '')].length > 4000)
                 ? 'border-destructive focus:ring-destructive/20 focus:border-destructive'
                 : 'border-border focus:ring-primary/20 focus:border-primary/40'
             }`}
@@ -510,6 +511,19 @@ export default function EditorPanel() {
                 <span>
                   Лимит Telegram: {limit} {message.mediaType === 'none' ? '(текст)' : '(подпись к медиа)'} · считается вместе с символами форматирования
                 </span>
+                <span className="font-mono tabular-nums">{len} / {limit}</span>
+              </div>
+            );
+          })()}
+          {message.platform === 'max' && (() => {
+            const limit = 4000;
+            const len = [...(message.text || '')].length;
+            const over = len > limit;
+            const warn = !over && len > limit * 0.9;
+            const tone = over ? 'text-destructive font-semibold' : warn ? 'text-amber-600' : 'text-muted-foreground';
+            return (
+              <div className={`mt-1.5 flex items-center justify-between text-[11px] ${tone}`}>
+                <span>Лимит MAX: {limit} символов · считается вместе с символами форматирования</span>
                 <span className="font-mono tabular-nums">{len} / {limit}</span>
               </div>
             );
