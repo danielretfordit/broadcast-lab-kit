@@ -74,6 +74,10 @@ function isFilled(m: MessageData): boolean {
   if (mediaInvalid) return false;
   const textEmpty = !m.text.trim();
   if (m.platform === 'html') return !!m.subject.trim() && !textEmpty;
+  if (m.platform === 'telegram') {
+    const limit = m.mediaType === 'none' ? 4096 : 1024;
+    if ([...(m.text || '')].length > limit) return false;
+  }
   return !textEmpty || hasValidMedia;
 }
 

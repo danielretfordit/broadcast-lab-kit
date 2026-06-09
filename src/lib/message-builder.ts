@@ -705,6 +705,17 @@ export function validateJson(jsonStr: string): { valid: boolean; error?: string 
   }
 }
 
+export function telegramTextLimit(m: { mediaType: string }): number {
+  return m.mediaType === 'none' ? 4096 : 1024;
+}
+export function telegramTextLength(m: { text?: string }): number {
+  return [...(m.text || '')].length;
+}
+export function isTelegramTextValid(m: { platform: string; mediaType: string; text?: string }): boolean {
+  if (m.platform !== 'telegram') return true;
+  return telegramTextLength(m) <= telegramTextLimit(m);
+}
+
 export function extractJsonFromText(text: string): string {
   let cleaned = text
     .replace(/```json\s*/gi, '')
