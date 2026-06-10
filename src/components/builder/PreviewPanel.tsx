@@ -401,11 +401,13 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               ? 'Заполните шаблон для сохранения'
               : mediaInvalid
                 ? 'Заполните медиа для сохранения'
-                : tgOverLimit
-                  ? `Превышен лимит Telegram: ${tgLen}/${tgLimit}`
-                  : maxOverLimit
-                    ? `Превышен лимит MAX: ${maxLen}/${maxLimit}`
-                    : 'Сохранить в проект';
+                : webpInvalid
+                  ? 'Формат .webp не поддерживается'
+                  : tgOverLimit
+                    ? `Превышен лимит Telegram: ${tgLen}/${tgLimit}`
+                    : maxOverLimit
+                      ? `Превышен лимит MAX: ${maxLen}/${maxLimit}`
+                      : 'Сохранить в проект';
             return (
               <div className="flex items-center gap-2">
                 <button
