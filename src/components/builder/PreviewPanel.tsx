@@ -4,7 +4,7 @@ import { ExternalLink, Save, Loader2, MoreVertical, Layers, MessageSquare } from
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
-import { buildJson, VIBER_BTN_BG, VIBER_KB_BG, type ViberKbButton } from '@/lib/message-builder';
+import { buildJson, VIBER_BTN_BG, VIBER_KB_BG, type ViberKbButton, hasWebpMedia } from '@/lib/message-builder';
 import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
