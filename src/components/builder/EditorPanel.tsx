@@ -524,10 +524,10 @@ export default function EditorPanel() {
             const warn = !over && len > limit * 0.9;
             const tone = over ? 'text-destructive' : warn ? 'text-amber-600' : 'text-muted-foreground';
             return (
-              <div className={`mt-1.5 flex items-center justify-between gap-2 text-[11px] ${tone}`}>
-                <span className="flex items-center gap-1">
-                  <AlertCircle size={11} />
-                  Лимит Telegram: {limit} {message.mediaType === 'none' ? '(текст)' : '(подпись к медиа)'} · считается вместе с символами форматирования
+              <div className={`mt-1.5 flex items-start justify-between gap-2 text-[11px] ${tone}`}>
+                <span className="flex items-start gap-1">
+                  <AlertCircle size={11} className="shrink-0 mt-0.5" />
+                  <span>Лимит Telegram: {limit} {message.mediaType === 'none' ? '(текст)' : '(подпись к медиа)'} · считается вместе с символами форматирования</span>
                 </span>
                 <span className="font-mono tabular-nums whitespace-nowrap">{len} / {limit}</span>
               </div>
@@ -540,10 +540,10 @@ export default function EditorPanel() {
             const warn = !over && len > limit * 0.9;
             const tone = over ? 'text-destructive' : warn ? 'text-amber-600' : 'text-muted-foreground';
             return (
-              <div className={`mt-1.5 flex items-center justify-between gap-2 text-[11px] ${tone}`}>
-                <span className="flex items-center gap-1">
-                  <AlertCircle size={11} />
-                  Лимит MAX: {limit} символов · считается вместе с символами форматирования
+              <div className={`mt-1.5 flex items-start justify-between gap-2 text-[11px] ${tone}`}>
+                <span className="flex items-start gap-1">
+                  <AlertCircle size={11} className="shrink-0 mt-0.5" />
+                  <span>Лимит MAX: {limit} символов · считается вместе с символами форматирования</span>
                 </span>
                 <span className="font-mono tabular-nums whitespace-nowrap">{len} / {limit}</span>
               </div>
