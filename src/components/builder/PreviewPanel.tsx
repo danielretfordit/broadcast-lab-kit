@@ -72,7 +72,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const maxLimit = message.platform === 'max' ? 4000 : 0;
   const maxLen = message.platform === 'max' ? [...(message.text || '')].length : 0;
   const maxOverLimit = message.platform === 'max' && maxLen > maxLimit;
-  const saveDisabled = mediaInvalid || emptyTemplate || tgOverLimit || maxOverLimit;
+  const webpInvalid = hasWebpMedia(message);
+  const saveDisabled = mediaInvalid || emptyTemplate || tgOverLimit || maxOverLimit || webpInvalid;
 
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
