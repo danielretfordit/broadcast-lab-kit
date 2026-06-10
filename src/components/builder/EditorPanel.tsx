@@ -23,6 +23,8 @@ export default function EditorPanel() {
   const albumUrls = message.mediaUrls || [];
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
   const mediaUrlMissing = !isHtml && !isAlbum && message.mediaType !== 'none' && !message.mediaUrl.trim();
+  const noWebpPlatform = isMax || message.platform === 'telegram' || isViber || isViberBot;
+  const photoWebpInvalid = noWebpPlatform && message.mediaType === 'photo' && isWebpUrl(message.mediaUrl);
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeNeedsSms = (isViber && viberRoute.includes('sms')) || isSms;
