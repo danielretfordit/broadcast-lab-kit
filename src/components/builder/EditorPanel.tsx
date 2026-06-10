@@ -334,7 +334,7 @@ export default function EditorPanel() {
                 value={message.mediaUrl}
                 onChange={e => updateField('mediaUrl', e.target.value)}
                 placeholder={mediaPlaceholders[message.mediaType] || 'https://...'}
-                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${mediaUrlMissing
+                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${(mediaUrlMissing || photoWebpInvalid)
                   ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
                   : 'border-border focus:ring-primary/20 focus:border-primary/40'
                   }`}
@@ -343,6 +343,12 @@ export default function EditorPanel() {
                 <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
                   <AlertCircle size={11} />
                   Укажите ссылку на {mediaLabel[message.mediaType]}
+                </p>
+              )}
+              {!mediaUrlMissing && photoWebpInvalid && (
+                <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Формат .webp не поддерживается для этой платформы. Используйте JPG или PNG.
                 </p>
               )}
               {isViberBot && message.mediaType === 'photo' && (
