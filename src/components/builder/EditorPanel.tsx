@@ -369,7 +369,9 @@ export default function EditorPanel() {
           )}
           {isAlbum && (
             <div className="space-y-2">
-              {albumUrls.map((url, idx) => (
+              {albumUrls.map((url, idx) => {
+                const webpBad = noWebpPlatform && isWebpUrl(url);
+                return (
                 <div key={idx} className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground font-mono w-5 text-right">{idx + 1}.</span>
                   <input
@@ -377,7 +379,7 @@ export default function EditorPanel() {
                     value={url}
                     onChange={e => updateAlbumUrl(idx, e.target.value)}
                     placeholder="https://example.com/photo.jpg"
-                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${!url.trim()
+                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${(!url.trim() || webpBad)
                       ? 'border-destructive/40 focus:ring-destructive/20 focus:border-destructive/60'
                       : 'border-border focus:ring-primary/20 focus:border-primary/40'
                       }`}
@@ -392,7 +394,8 @@ export default function EditorPanel() {
                     <X size={14} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
               <div className="flex items-center justify-between pt-1">
                 <button
                   type="button"
@@ -411,6 +414,12 @@ export default function EditorPanel() {
                 <p className="text-[11px] text-destructive flex items-center gap-1">
                   <AlertCircle size={11} />
                   Укажите как минимум 2 ссылки на фото
+                </p>
+              )}
+              {noWebpPlatform && albumUrls.some(u => isWebpUrl(u)) && (
+                <p className="text-[11px] text-destructive flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Формат .webp не поддерживается для этой платформы. Используйте JPG или PNG.
                 </p>
               )}
             </div>
