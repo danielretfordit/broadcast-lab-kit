@@ -43,6 +43,7 @@ function isWhatsAppFilled(m: MessageData): boolean {
 }
 
 function isFilled(m: MessageData): boolean {
+  if (hasWebpMedia(m)) return false;
   if (m.platform === 'sms') return !!(m.smsText && m.smsText.trim());
   const albumUrls = (m.mediaUrls || []).filter(u => u && u.trim());
   const isAlbum = m.mediaType === 'album';
