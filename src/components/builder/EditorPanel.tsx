@@ -522,13 +522,14 @@ export default function EditorPanel() {
             const len = [...(message.text || '')].length;
             const over = len > limit;
             const warn = !over && len > limit * 0.9;
-            const tone = over ? 'text-destructive font-semibold' : warn ? 'text-amber-600' : 'text-muted-foreground';
+            const tone = over ? 'text-destructive' : warn ? 'text-amber-600' : 'text-muted-foreground';
             return (
-              <div className={`mt-1.5 flex items-center justify-between text-[11px] ${tone}`}>
-                <span>
+              <div className={`mt-1.5 flex items-center justify-between gap-2 text-[11px] ${tone}`}>
+                <span className="flex items-center gap-1">
+                  <AlertCircle size={11} />
                   Лимит Telegram: {limit} {message.mediaType === 'none' ? '(текст)' : '(подпись к медиа)'} · считается вместе с символами форматирования
                 </span>
-                <span className="font-mono tabular-nums">{len} / {limit}</span>
+                <span className="font-mono tabular-nums whitespace-nowrap">{len} / {limit}</span>
               </div>
             );
           })()}
@@ -537,11 +538,14 @@ export default function EditorPanel() {
             const len = [...(message.text || '')].length;
             const over = len > limit;
             const warn = !over && len > limit * 0.9;
-            const tone = over ? 'text-destructive font-semibold' : warn ? 'text-amber-600' : 'text-muted-foreground';
+            const tone = over ? 'text-destructive' : warn ? 'text-amber-600' : 'text-muted-foreground';
             return (
-              <div className={`mt-1.5 flex items-center justify-between text-[11px] ${tone}`}>
-                <span>Лимит MAX: {limit} символов · считается вместе с символами форматирования</span>
-                <span className="font-mono tabular-nums">{len} / {limit}</span>
+              <div className={`mt-1.5 flex items-center justify-between gap-2 text-[11px] ${tone}`}>
+                <span className="flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Лимит MAX: {limit} символов · считается вместе с символами форматирования
+                </span>
+                <span className="font-mono tabular-nums whitespace-nowrap">{len} / {limit}</span>
               </div>
             );
           })()}
