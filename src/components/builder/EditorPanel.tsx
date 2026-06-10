@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG, VIBER_BTN_BG_PALETTE } from '@/lib/message-builder';
+import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG, VIBER_BTN_BG_PALETTE, isWebpUrl } from '@/lib/message-builder';
 import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
