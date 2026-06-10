@@ -725,6 +725,21 @@ export function isMaxTextValid(m: { platform: string; text?: string }): boolean 
   return maxTextLength(m) <= MAX_TEXT_LIMIT;
 }
 
+// Platforms that DO NOT support .webp photos (sticker format, not allowed as photo).
+const NO_WEBP_PLATFORMS = new Set<string>(['telegram', 'max', 'viber_business', 'viber_bot']);
+
+export function isWebpUrl(url?: string): boolean {
+  if (!url) return false;
+  return /\.webp(\?|#|$)/i.test(url.trim());
+}
+
+export function hasWebpMedia(m: { platform: string; mediaType: string; mediaUrl?: string; mediaUrls?: string[] }): boolean {
+  if (!NO_WEBP_PLATFORMS.has(m.platform)) return false;
+  if (m.mediaType === 'photo') return isWebpUrl(m.mediaUrl);
+  if (m.mediaType === 'album') return (m.mediaUrls || []).some(u => isWebpUrl(u));
+  return false;
+}
+
 export function extractJsonFromText(text: string): string {
   let cleaned = text
     .replace(/```json\s*/gi, '')

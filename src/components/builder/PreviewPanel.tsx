@@ -4,7 +4,7 @@ import { ExternalLink, Save, Loader2, MoreVertical, Layers, MessageSquare } from
 import { toast } from 'sonner';
 import maxLogo from '@/assets/max-logo.png';
 import { useSearchParams } from 'react-router-dom';
-import { buildJson, VIBER_BTN_BG, VIBER_KB_BG, type ViberKbButton } from '@/lib/message-builder';
+import { buildJson, VIBER_BTN_BG, VIBER_KB_BG, type ViberKbButton, hasWebpMedia } from '@/lib/message-builder';
 import { smsParts } from '@/lib/sms';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import SaveAllTemplatesDialog from './SaveAllTemplatesDialog';
@@ -72,7 +72,8 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
   const maxLimit = message.platform === 'max' ? 4000 : 0;
   const maxLen = message.platform === 'max' ? [...(message.text || '')].length : 0;
   const maxOverLimit = message.platform === 'max' && maxLen > maxLimit;
-  const saveDisabled = mediaInvalid || emptyTemplate || tgOverLimit || maxOverLimit;
+  const webpInvalid = hasWebpMedia(message);
+  const saveDisabled = mediaInvalid || emptyTemplate || tgOverLimit || maxOverLimit || webpInvalid;
 
   const renderText = (text: string) => {
     if (!text) return <span className="text-muted-foreground italic text-sm">Нет текста сообщения</span>;
@@ -400,11 +401,13 @@ export default function PreviewPanel({ viewOnly }: PreviewPanelProps) {
               ? 'Заполните шаблон для сохранения'
               : mediaInvalid
                 ? 'Заполните медиа для сохранения'
-                : tgOverLimit
-                  ? `Превышен лимит Telegram: ${tgLen}/${tgLimit}`
-                  : maxOverLimit
-                    ? `Превышен лимит MAX: ${maxLen}/${maxLimit}`
-                    : 'Сохранить в проект';
+                : webpInvalid
+                  ? 'Формат .webp не поддерживается'
+                  : tgOverLimit
+                    ? `Превышен лимит Telegram: ${tgLen}/${tgLimit}`
+                    : maxOverLimit
+                      ? `Превышен лимит MAX: ${maxLen}/${maxLimit}`
+                      : 'Сохранить в проект';
             return (
               <div className="flex items-center gap-2">
                 <button

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMessage } from '@/contexts/MessageContext';
-import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG, VIBER_BTN_BG_PALETTE } from '@/lib/message-builder';
+import { generateId, type ButtonRow, type InlineButton, type ViberKbButton, type ViberKbRow, type ViberKeyboard, type ViberKbActionType, type ViberKbTextSize, type ViberKbAlignH, type ViberKbAlignV, createEmptyViberButton, VIBER_BTN_BG, VIBER_BTN_BG_PALETTE, isWebpUrl } from '@/lib/message-builder';
 import { Bold, Underline, Italic, Strikethrough, Link, Image, Video, FileText, Plus, X, Sparkles, Loader2, Code2, Quote, AlertCircle, Images, Heading, MessageSquare, Code } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,6 +23,8 @@ export default function EditorPanel() {
   const albumUrls = message.mediaUrls || [];
   const albumValidCount = albumUrls.filter(u => u.trim()).length;
   const mediaUrlMissing = !isHtml && !isAlbum && message.mediaType !== 'none' && !message.mediaUrl.trim();
+  const noWebpPlatform = isMax || message.platform === 'telegram' || isViber || isViberBot;
+  const photoWebpInvalid = noWebpPlatform && message.mediaType === 'photo' && isWebpUrl(message.mediaUrl);
   const albumMissing = !isHtml && isAlbum && albumValidCount < 2;
   const viberRoute = message.viberRoute || 'viber(60)-sms';
   const routeNeedsSms = (isViber && viberRoute.includes('sms')) || isSms;
@@ -332,7 +334,7 @@ export default function EditorPanel() {
                 value={message.mediaUrl}
                 onChange={e => updateField('mediaUrl', e.target.value)}
                 placeholder={mediaPlaceholders[message.mediaType] || 'https://...'}
-                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${mediaUrlMissing
+                className={`w-full px-3 py-2.5 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${(mediaUrlMissing || photoWebpInvalid)
                   ? 'border-destructive/60 focus:ring-destructive/20 focus:border-destructive/60'
                   : 'border-border focus:ring-primary/20 focus:border-primary/40'
                   }`}
@@ -341,6 +343,12 @@ export default function EditorPanel() {
                 <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
                   <AlertCircle size={11} />
                   Укажите ссылку на {mediaLabel[message.mediaType]}
+                </p>
+              )}
+              {!mediaUrlMissing && photoWebpInvalid && (
+                <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Формат .webp не поддерживается для этой платформы. Используйте JPG или PNG.
                 </p>
               )}
               {isViberBot && message.mediaType === 'photo' && (
@@ -361,7 +369,9 @@ export default function EditorPanel() {
           )}
           {isAlbum && (
             <div className="space-y-2">
-              {albumUrls.map((url, idx) => (
+              {albumUrls.map((url, idx) => {
+                const webpBad = noWebpPlatform && isWebpUrl(url);
+                return (
                 <div key={idx} className="flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground font-mono w-5 text-right">{idx + 1}.</span>
                   <input
@@ -369,7 +379,7 @@ export default function EditorPanel() {
                     value={url}
                     onChange={e => updateAlbumUrl(idx, e.target.value)}
                     placeholder="https://example.com/photo.jpg"
-                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${!url.trim()
+                    className={`flex-1 px-3 py-2 rounded-lg bg-card border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${(!url.trim() || webpBad)
                       ? 'border-destructive/40 focus:ring-destructive/20 focus:border-destructive/60'
                       : 'border-border focus:ring-primary/20 focus:border-primary/40'
                       }`}
@@ -384,7 +394,8 @@ export default function EditorPanel() {
                     <X size={14} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
               <div className="flex items-center justify-between pt-1">
                 <button
                   type="button"
@@ -403,6 +414,12 @@ export default function EditorPanel() {
                 <p className="text-[11px] text-destructive flex items-center gap-1">
                   <AlertCircle size={11} />
                   Укажите как минимум 2 ссылки на фото
+                </p>
+              )}
+              {noWebpPlatform && albumUrls.some(u => isWebpUrl(u)) && (
+                <p className="text-[11px] text-destructive flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Формат .webp не поддерживается для этой платформы. Используйте JPG или PNG.
                 </p>
               )}
             </div>
@@ -505,13 +522,14 @@ export default function EditorPanel() {
             const len = [...(message.text || '')].length;
             const over = len > limit;
             const warn = !over && len > limit * 0.9;
-            const tone = over ? 'text-destructive font-semibold' : warn ? 'text-amber-600' : 'text-muted-foreground';
+            const tone = over ? 'text-destructive' : warn ? 'text-amber-600' : 'text-muted-foreground';
             return (
-              <div className={`mt-1.5 flex items-center justify-between text-[11px] ${tone}`}>
-                <span>
+              <div className={`mt-1.5 flex items-center justify-between gap-2 text-[11px] ${tone}`}>
+                <span className="flex items-center gap-1">
+                  <AlertCircle size={11} />
                   Лимит Telegram: {limit} {message.mediaType === 'none' ? '(текст)' : '(подпись к медиа)'} · считается вместе с символами форматирования
                 </span>
-                <span className="font-mono tabular-nums">{len} / {limit}</span>
+                <span className="font-mono tabular-nums whitespace-nowrap">{len} / {limit}</span>
               </div>
             );
           })()}
@@ -520,11 +538,14 @@ export default function EditorPanel() {
             const len = [...(message.text || '')].length;
             const over = len > limit;
             const warn = !over && len > limit * 0.9;
-            const tone = over ? 'text-destructive font-semibold' : warn ? 'text-amber-600' : 'text-muted-foreground';
+            const tone = over ? 'text-destructive' : warn ? 'text-amber-600' : 'text-muted-foreground';
             return (
-              <div className={`mt-1.5 flex items-center justify-between text-[11px] ${tone}`}>
-                <span>Лимит MAX: {limit} символов · считается вместе с символами форматирования</span>
-                <span className="font-mono tabular-nums">{len} / {limit}</span>
+              <div className={`mt-1.5 flex items-center justify-between gap-2 text-[11px] ${tone}`}>
+                <span className="flex items-center gap-1">
+                  <AlertCircle size={11} />
+                  Лимит MAX: {limit} символов · считается вместе с символами форматирования
+                </span>
+                <span className="font-mono tabular-nums whitespace-nowrap">{len} / {limit}</span>
               </div>
             );
           })()}
